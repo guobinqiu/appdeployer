@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -43,9 +43,10 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ctx context.Context,
 		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
+		log.Println("service resource successfully updated")
+	} else {
+		log.Println("service resource successfully created")
 	}
-
-	fmt.Println("kube service successfully done.")
 
 	return nil
 }

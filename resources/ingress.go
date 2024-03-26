@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"math/big"
 	"net"
 	"time"
@@ -86,9 +87,10 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
+		log.Println("ingress resource successfully updated")
+	} else {
+		log.Println("ingress resource successfully created")
 	}
-
-	fmt.Println("kube ingress successfully done.")
 
 	return nil
 }

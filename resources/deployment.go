@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -61,9 +61,10 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Conte
 		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
+		log.Println("deployment resource successfully updated")
+	} else {
+		log.Println("deployment resource successfully created")
 	}
-
-	fmt.Println("kube deployment successfully done.")
 
 	return nil
 }

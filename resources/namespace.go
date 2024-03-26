@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,9 +21,10 @@ func CreateOrUpdateNamespace(clientset *kubernetes.Clientset, ctx context.Contex
 		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
+		log.Println("namespace resource successfully updated")
+	} else {
+		log.Println("namespace resource successfully created")
 	}
-
-	fmt.Println("kube namespace successfully done.")
 
 	return nil
 }

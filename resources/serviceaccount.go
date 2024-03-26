@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"fmt"
+	"log"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -32,9 +32,10 @@ func CreateOrUpdateServiceAccount(clientset *kubernetes.Clientset, ctx context.C
 		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
+		log.Println("serviceaccount resource successfully updated")
+	} else {
+		log.Println("serviceaccount resource successfully created")
 	}
-
-	fmt.Println("kube serviceaccount successfully done.")
 
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/guobinqiu/deployer/docker"
@@ -42,9 +43,10 @@ func CreateOrUpdateDockerSecret(clientset *kubernetes.Clientset, ctx context.Con
 		if !apierrors.IsAlreadyExists(err) {
 			return err
 		}
+		log.Println("docker secret resource successfully updated")
+	} else {
+		log.Println("docker secret resource successfully created")
 	}
-
-	fmt.Println("kube docker secret successfully done.")
 
 	return nil
 }

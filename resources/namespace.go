@@ -2,7 +2,7 @@ package resources
 
 import (
 	"context"
-	"log"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,11 +19,11 @@ func CreateOrUpdateNamespace(clientset *kubernetes.Clientset, ctx context.Contex
 
 	if _, err := clientset.CoreV1().Namespaces().Create(ctx, ns, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return err
+			return fmt.Errorf("failed to create ingress resource: %v", err)
 		}
-		log.Println("namespace resource successfully updated")
+		fmt.Println("namespace resource successfully updated")
 	} else {
-		log.Println("namespace resource successfully created")
+		fmt.Println("namespace resource successfully created")
 	}
 
 	return nil

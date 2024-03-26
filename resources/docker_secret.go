@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/guobinqiu/deployer/docker"
@@ -41,11 +40,11 @@ func CreateOrUpdateDockerSecret(clientset *kubernetes.Clientset, ctx context.Con
 
 	if _, err = clientset.CoreV1().Secrets(opts.Namespace).Create(ctx, secret, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return err
+			return fmt.Errorf("failed to create docker secret resource: %v", err)
 		}
-		log.Println("docker secret resource successfully updated")
+		fmt.Println("docker secret resource successfully updated")
 	} else {
-		log.Println("docker secret resource successfully created")
+		fmt.Println("docker secret resource successfully created")
 	}
 
 	return nil

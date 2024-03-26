@@ -8,7 +8,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"math/big"
 	"net"
 	"time"
@@ -70,9 +69,10 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 	}
 
 	if opts.TLS {
-		if err := createOrUpdateTlsSecret(clientset, ctx, opts); err != nil {
+		if err := CreateOrUpdateTlsSecret(clientset, ctx, opts); err != nil {
 			return err
 		}
+
 		ingress.Spec.TLS = []networkingv1.IngressTLS{
 			{
 				Hosts: []string{
@@ -85,32 +85,34 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 
 	if _, err := clientset.NetworkingV1().Ingresses(opts.Namespace).Create(ctx, ingress, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			return err
+			return fmt.Errorf("failed to create ingress resource: %v", err)
 		}
-		log.Println("ingress resource successfully updated")
+		fmt.Println("ingress resource successfully updated")
 	} else {
-		log.Println("ingress resource successfully created")
+		fmt.Println("ingress resource successfully created")
 	}
 
 	return nil
 }
 
-func createOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions) error {
+func CreateOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions) error {
+	cm := &CertificateManager{}
+
 	// 创建CA证书和私钥
-	caCert, caPrivateKey, err := createCACertificate()
+	caCert, caPrivateKey, err := cm.CreateCACertificate()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create ca certificate: %v", err)
 	}
 
 	// 创建服务器证书和私钥
-	serverCertBytes, serverPrivateKey, err := createServerCertificate(caCert, caPrivateKey, opts.Host)
+	serverCertBytes, serverPrivateKey, err := cm.CreateServerCertificate(caCert, caPrivateKey, opts.Host)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create server certificate: %v", err)
 	}
 
 	// 将证书和私钥保存到文件（PEM格式）
-	tlsKeyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(serverPrivateKey)})
-	tlsCertBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: serverCertBytes})
+	tlsKeyBytes := cm.EncodePrivateKeyToPEM(serverPrivateKey)
+	tlsCertBytes := cm.EncodeCertificateToPEM(serverCertBytes)
 
 	tlsSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -125,18 +127,20 @@ func createOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Contex
 
 	if _, err := clientset.CoreV1().Secrets(opts.Namespace).Create(ctx, tlsSecret, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
-			// return fmt.Errorf("failed to create TLS secret: %v", err)
-			return err
+			return fmt.Errorf("failed to create tls secret resource: %v", err)
 		}
+		fmt.Println("tls secret resource successfully updated")
+	} else {
+		fmt.Println("tls secret resource successfully created")
 	}
-
-	fmt.Println("kube tls secret successfully done.")
 
 	return nil
 }
 
+type CertificateManager struct{}
+
 // 创建一个CA
-func createCACertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
+func (cm *CertificateManager) CreateCACertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 	// 生成私钥
 	caPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -179,7 +183,7 @@ func createCACertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
 }
 
 // 使用CA签发服务器证书
-func createServerCertificate(caCert *x509.Certificate, caPrivateKey *rsa.PrivateKey, serverName string) ([]byte, *rsa.PrivateKey, error) {
+func (cm *CertificateManager) CreateServerCertificate(caCert *x509.Certificate, caPrivateKey *rsa.PrivateKey, serverName string) ([]byte, *rsa.PrivateKey, error) {
 	// 生成服务器私钥
 	serverPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -214,4 +218,22 @@ func createServerCertificate(caCert *x509.Certificate, caPrivateKey *rsa.Private
 	}
 
 	return serverBytes, serverPrivateKey, nil
+}
+
+// 将私钥转换为PEM格式
+func (cm *CertificateManager) EncodePrivateKeyToPEM(privateKey *rsa.PrivateKey) []byte {
+	pemBlock := &pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
+	}
+	return pem.EncodeToMemory(pemBlock)
+}
+
+// 将证书转换为PEM格式
+func (cm *CertificateManager) EncodeCertificateToPEM(cert []byte) []byte {
+	pemBlock := &pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: cert,
+	}
+	return pem.EncodeToMemory(pemBlock)
 }

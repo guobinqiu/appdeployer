@@ -88,6 +88,8 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 		}
 	}
 
+	fmt.Println("kube ingress successfully done.")
+
 	return nil
 }
 
@@ -125,6 +127,9 @@ func createOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Contex
 			return err
 		}
 	}
+
+	fmt.Println("kube tls secret successfully done.")
+
 	return nil
 }
 

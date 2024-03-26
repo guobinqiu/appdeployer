@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,40 +18,49 @@ import (
 	"github.com/guobinqiu/deployer/helpers"
 )
 
+const DOCKERHUB = "https://index.docker.io/v1/"
+
 type DockerOptions struct {
-	AppDir     string
-	Configfile string
-	Dockerfile string
-	Registry   string
-	Username   string
-	Password   string
-	Repository string
-	Tag        string
+	AppDir       string
+	Dockerfile   string
+	Dockerconfig string
+	Registry     string
+	Username     string
+	Password     string
+	Repository   string
+	Tag          string
 }
 
-func (opts DockerOptions) Image() string {
+func (opts DockerOptions) Image() (string, error) {
+	if helpers.IsBlank(opts.Registry) {
+		return "", errors.New("docker.registry is required")
+	}
+	if helpers.IsBlank(opts.Repository) {
+		return "", errors.New("docker.repository is required")
+	}
+
 	builder := new(strings.Builder)
-	builder.WriteString(opts.Registry)
-	if !helpers.IsBlank(opts.Username) {
+
+	if opts.Registry != DOCKERHUB {
+		builder.WriteString(opts.Registry)
 		builder.WriteByte('/')
-		builder.WriteString(opts.Username)
 	}
-	builder.WriteByte('/')
+
 	builder.WriteString(opts.Repository)
-	tag := opts.Tag
+
 	if !helpers.IsBlank(opts.Tag) {
-		tag = "latest"
+		builder.WriteByte(':')
+		builder.WriteString(opts.Tag)
 	}
-	builder.WriteByte(':')
-	builder.WriteString(tag)
-	return builder.String()
+
+	return builder.String(), nil
 }
 
 type DockerService struct {
 	cli *client.Client
 }
 
-// NewDockerClient 创建一个新的Docker客户端实例
+// 创建一个新的Docker客户端实例
 func NewDockerService() (*DockerService, error) {
 	cli, err := client.NewClientWithOpts(
 		client.FromEnv,
@@ -74,13 +84,16 @@ func (ds *DockerService) BuildImage(ctx context.Context, opts DockerOptions) err
 	}
 	defer buildCtx.Close()
 
+	img, err := opts.Image()
+	if err != nil {
+		return err
+	}
+
 	// 构建镜像的选项
 	buildOptions := types.ImageBuildOptions{
 		Dockerfile: opts.Dockerfile,
 		Context:    buildCtx,
-		Tags: []string{
-			fmt.Sprintf("%s:%s", opts.Registry, opts.Tag),
-		},
+		Tags:       []string{img},
 	}
 
 	resp, err := ds.cli.ImageBuild(ctx, buildCtx, buildOptions)
@@ -118,8 +131,13 @@ func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions) erro
 
 	authStr := base64.URLEncoding.EncodeToString(encodedJSON)
 
+	img, err := opts.Image()
+	if err != nil {
+		return err
+	}
+
 	// 推送镜像
-	pushResp, err := ds.cli.ImagePush(ctx, opts.Image(), image.PushOptions{RegistryAuth: authStr})
+	pushResp, err := ds.cli.ImagePush(ctx, img, image.PushOptions{RegistryAuth: authStr})
 	if err != nil {
 		return err
 	}

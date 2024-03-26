@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,6 +22,8 @@ func CreateOrUpdateNamespace(clientset *kubernetes.Clientset, ctx context.Contex
 			return err
 		}
 	}
+
+	fmt.Println("kube namespace successfully done.")
 
 	return nil
 }

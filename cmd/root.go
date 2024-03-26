@@ -90,15 +90,14 @@ var rootCmd = &cobra.Command{
 	Long:  "app deployer is used to deploy your application to any kubernetes clusters as well as VMs via ansible",
 	Run: func(cmd *cobra.Command, args []string) {
 		setDefault()
-		print()
 
 		//TODO handle timeout or cancel
 		ctx := context.TODO()
 
-		// Pull or clone to appdir
+		// Pull or clone into appdir
 		if gitOptions.Pull {
 			if helpers.IsBlank(gitOptions.Repo) {
-				panic("git.repo is required")
+				panic("--git.repo is required")
 			}
 			if err := git.Pull(gitOptions); err != nil {
 				panic(err)
@@ -135,40 +134,51 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Update (or create if not exists) kubernetes resource objects
-		resources.CreateOrUpdateNamespace(clientset, ctx, defaultOptions.Namespace)
+		if err := resources.CreateOrUpdateNamespace(clientset, ctx, defaultOptions.Namespace); err != nil {
+			panic(err)
+		}
 
-		resources.CreateOrUpdateDockerSecret(clientset, ctx, resources.DockerSecretOptions{
+		if err := resources.CreateOrUpdateDockerSecret(clientset, ctx, resources.DockerSecretOptions{
 			ApplicationName: defaultOptions.ApplicationName,
 			Namespace:       defaultOptions.Namespace,
 			DockerOptions:   dockerOptions,
-		})
+		}); err != nil {
+			panic(err)
+		}
 
-		resources.CreateOrUpdateServiceAccount(clientset, ctx, resources.ServiceAccountOptions{
+		if err := resources.CreateOrUpdateServiceAccount(clientset, ctx, resources.ServiceAccountOptions{
 			ApplicationName: defaultOptions.ApplicationName,
 			Namespace:       defaultOptions.Namespace,
-		})
+		}); err != nil {
+			panic(err)
+		}
 
-		img, _ := dockerOptions.Image()
 		deploymentOptions.ApplicationName = defaultOptions.ApplicationName
 		deploymentOptions.Namespace = defaultOptions.Namespace
-		deploymentOptions.Image = img
-		resources.CreateOrUpdateDeployment(clientset, ctx, deploymentOptions)
+		deploymentOptions.Image = dockerOptions.Image()
+		if err := resources.CreateOrUpdateDeployment(clientset, ctx, deploymentOptions); err != nil {
+			panic(err)
+		}
 
 		serviceOptions.ApplicationName = defaultOptions.ApplicationName
 		serviceOptions.Namespace = defaultOptions.Namespace
 		serviceOptions.TargetPort = deploymentOptions.Port
-		resources.CreateOrUpdateService(clientset, ctx, serviceOptions)
+		if err := resources.CreateOrUpdateService(clientset, ctx, serviceOptions); err != nil {
+			panic(err)
+		}
 
 		ingressOptions.ApplicationName = defaultOptions.ApplicationName
 		ingressOptions.Namespace = defaultOptions.Namespace
-		resources.CreateOrUpdateIngress(clientset, ctx, ingressOptions)
+		if err := resources.CreateOrUpdateIngress(clientset, ctx, ingressOptions); err != nil {
+			panic(err)
+		}
 	},
 }
 
 func setDefault() {
 	defaultOptions.AppDir = helpers.ExpandUser(defaultOptions.AppDir)
 	if helpers.IsBlank(defaultOptions.AppDir) {
-		panic("appdir is required")
+		panic("--default.appdir is required")
 	}
 
 	exist, err := helpers.IsDirExist(defaultOptions.AppDir)
@@ -178,6 +188,7 @@ func setDefault() {
 	if !exist {
 		panic("appdir does not exist")
 	}
+
 	gitOptions.AppDir = defaultOptions.AppDir
 	dockerOptions.AppDir = defaultOptions.AppDir
 
@@ -215,17 +226,8 @@ func setDefault() {
 
 	if helpers.IsBlank(dockerOptions.Repository) && dockerOptions.Registry == docker.DOCKERHUB {
 		if helpers.IsBlank(dockerOptions.Username) {
-			panic("docker.username is required")
+			panic("--docker.username is required")
 		}
 		dockerOptions.Repository = fmt.Sprintf("%s/%s", dockerOptions.Username, applicationName)
 	}
-}
-
-func print() {
-	fmt.Printf("%+v\n", defaultOptions)
-	fmt.Printf("%+v\n", gitOptions)
-	fmt.Printf("%+v\n", dockerOptions)
-	fmt.Printf("%+v\n", ingressOptions)
-	fmt.Printf("%+v\n", serviceOptions)
-	fmt.Printf("%+v\n", deploymentOptions)
 }

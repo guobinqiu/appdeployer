@@ -31,29 +31,28 @@ type DockerOptions struct {
 	Tag          string
 }
 
-func (opts DockerOptions) Image() (string, error) {
-	if helpers.IsBlank(opts.Registry) {
-		return "", errors.New("docker.registry is required")
+func (opts DockerOptions) Validate() error {
+	if helpers.IsBlank(opts.Registry) && opts.Registry != DOCKERHUB {
+		return errors.New("--docker.registry is required")
 	}
 	if helpers.IsBlank(opts.Repository) {
-		return "", errors.New("docker.repository is required")
+		return errors.New("--docker.repository is required")
 	}
+	return nil
+}
 
+func (opts DockerOptions) Image() string {
 	builder := new(strings.Builder)
-
 	if opts.Registry != DOCKERHUB {
 		builder.WriteString(opts.Registry)
 		builder.WriteByte('/')
 	}
-
 	builder.WriteString(opts.Repository)
-
 	if !helpers.IsBlank(opts.Tag) {
 		builder.WriteByte(':')
 		builder.WriteString(opts.Tag)
 	}
-
-	return builder.String(), nil
+	return builder.String()
 }
 
 type DockerService struct {
@@ -77,45 +76,40 @@ func (ds *DockerService) Close() error {
 }
 
 func (ds *DockerService) BuildImage(ctx context.Context, opts DockerOptions) error {
+	if err := opts.Validate(); err != nil {
+		return err
+	}
+
 	// 创建一个上下文（context）包含Dockerfile和其他构建所需文件
 	buildCtx, err := archive.TarWithOptions(opts.AppDir, &archive.TarOptions{})
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unable to create tar archive from directory '%s': %w", opts.AppDir, err)
 	}
 	defer buildCtx.Close()
-
-	img, err := opts.Image()
-	if err != nil {
-		return err
-	}
 
 	// 构建镜像的选项
 	buildOptions := types.ImageBuildOptions{
 		Dockerfile: opts.Dockerfile,
 		Context:    buildCtx,
-		Tags:       []string{img},
+		Tags:       []string{opts.Image()},
 	}
 
 	resp, err := ds.cli.ImageBuild(ctx, buildCtx, buildOptions)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to build Docker image: %v", err)
 	}
 	defer resp.Body.Close()
 
 	// 读取并处理构建过程中的输出流，这里通常会打印到控制台
 	io.Copy(os.Stdout, resp.Body)
+
 	return nil
 }
 
 func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions) error {
-	cli, err := client.NewClientWithOpts(
-		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
-	)
-	if err != nil {
+	if err := opts.Validate(); err != nil {
 		return err
 	}
-	defer cli.Close()
 
 	// 登录到Docker registry
 	authConfig := registry.AuthConfig{
@@ -131,23 +125,19 @@ func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions) erro
 
 	authStr := base64.URLEncoding.EncodeToString(encodedJSON)
 
-	img, err := opts.Image()
-	if err != nil {
-		return err
-	}
-
 	// 推送镜像
-	pushResp, err := ds.cli.ImagePush(ctx, img, image.PushOptions{RegistryAuth: authStr})
+	pushResp, err := ds.cli.ImagePush(ctx, opts.Image(), image.PushOptions{RegistryAuth: authStr})
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal auth configuration to JSON: %v", err)
 	}
 	defer pushResp.Close()
 
 	// 打印推送日志
 	body, err := io.ReadAll(pushResp)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to read response body while pushing Docker image: %v", err)
 	}
 	fmt.Println(string(body))
+
 	return nil
 }

@@ -7,7 +7,7 @@ import (
 )
 
 func IsBlank(s string) bool {
-	return len(strings.Trim(s, " ")) == 0
+	return len(strings.TrimSpace(s)) == 0
 }
 
 func GetDefaultKubeConfig() string {

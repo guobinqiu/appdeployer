@@ -1,0 +1,4 @@
+---
+- hosts: nodejs
+  roles:
+    - role: nodejs

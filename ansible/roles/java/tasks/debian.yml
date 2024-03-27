@@ -1,0 +1,24 @@
+---
+- name: Install JDK 17
+  apt:
+    name: openjdk-17-jdk
+    state: installed
+
+- name: Install Maven 3.9.6
+  apt:
+    name: maven
+    state: installed
+
+- name: Install Tomcat 9
+  apt:
+    name: tomcat9
+    state: installed
+  service:
+    name: tomcat
+    state: started
+
+- name: Start and enable Tomcat service
+  service:
+    name: tomcat9
+    state: started
+    enabled: yes

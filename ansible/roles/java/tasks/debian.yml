@@ -1,24 +1,24 @@
 ---
-- name: Install JDK 17
+- name: Update all packages
   apt:
-    name: openjdk-17-jdk
-    state: installed
+    update_cache: yes
 
-- name: Install Maven 3.9.6
+- name: Install JDK 11
+  apt:
+    name: default-jdk
+    state: present
+
+- name: Install Maven
   apt:
     name: maven
-    state: installed
+    state: present
 
-- name: Install Tomcat 9
+- name: Install Tomcat
   apt:
     name: tomcat9
-    state: installed
-  service:
-    name: tomcat
-    state: started
+    state: present
 
-- name: Start and enable Tomcat service
-  service:
-    name: tomcat9
-    state: started
-    enabled: yes
+- name: Restart Tomcat
+  shell: |
+    kill $(ps -ef | grep 'catalina' | grep -v 'grep' | awk '{print $2}')
+    /usr/share/tomcat9/bin/catalina.sh start

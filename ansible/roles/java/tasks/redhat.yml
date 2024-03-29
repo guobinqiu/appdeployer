@@ -1,0 +1,47 @@
+---
+- name: Install Java 11
+  yum:
+    name: java-11-openjdk-devel
+    state: present
+
+- name: Swith to Java 11
+  command: update-alternatives --set java java-11-openjdk.{{ ansible_architecture }}
+
+- name: Install Maven
+  yum:
+    name: maven
+    state: present
+
+- name: Create a non-interactive system user for Tomcat
+  user:
+    name: tomcat
+    createhome: yes
+    home: /opt/tomcat
+    shell: /sbin/nologin
+    system: yes
+    state: present
+
+- name: Download Tomcat9 tarball
+  get_url:
+    url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.87/bin/apache-tomcat-9.0.87.tar.gz
+    dest: /tmp/apache-tomcat-9.0.87.tar.gz
+    mode: 0644
+
+- name: Extract Tomcat9 tarball
+  unarchive:
+    src: /tmp/apache-tomcat-9.0.87.tar.gz
+    dest: /opt/tomcat
+    remote_src: yes
+    extra_opts: "--strip-components=1"
+    owner: tomcat
+    group: tomcat
+    creates: /opt/tomcat/bin/catalina.sh
+
+# or install as systemctl service with User=tomcat and Group=tomcat
+- name: Start Tomcat9
+  shell: /opt/tomcat/bin/catalina.sh start
+  register: tomcat_start_result
+
+- name: Tomcat Status
+  debug:
+    var: tomcat_start_result.stdout_lines

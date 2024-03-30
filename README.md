@@ -1,4 +1,4 @@
-# App Deployer
+# 发布应用到k8s集群或者vm
 
-App deployer is used to deploy your application to any kubernetes clusters as well as VMs via ansible. (In progress)
+建设中...
 

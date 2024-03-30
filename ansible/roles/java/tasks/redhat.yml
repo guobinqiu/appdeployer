@@ -1,10 +1,14 @@
 ---
+- name: Update all packages
+  yum:
+    update_cache: yes
+
 - name: Install Java 11
   yum:
     name: java-11-openjdk-devel
     state: present
 
-- name: Swith to Java 11
+- name: Set default to Java 11
   command: update-alternatives --set java java-11-openjdk.{{ ansible_architecture }}
 
 - name: Install Maven
@@ -37,7 +41,6 @@
     group: tomcat
     creates: /opt/tomcat/bin/catalina.sh
 
-# or install as systemctl service with User=tomcat and Group=tomcat
 - name: Start Tomcat9
   shell: /opt/tomcat/bin/catalina.sh start
   register: tomcat_start_result

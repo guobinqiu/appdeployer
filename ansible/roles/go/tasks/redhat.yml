@@ -21,13 +21,13 @@
     url: "{{ go_download_url }}"
     dest: /tmp
 
-- name: Create an extraction directory
+- name: Untarred directory
   file:
     path: "/tmp/{{ go_version }}"
     state: directory
     mode: 0755
 
-- name: Extract Go source code to the extraction directory
+- name: Extract Go
   ansible.builtin.unarchive:
     src: "/tmp/{{ go_version }}.src.tar.gz"
     dest: "/tmp/{{ go_version }}"

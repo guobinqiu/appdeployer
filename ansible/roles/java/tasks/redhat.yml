@@ -41,8 +41,10 @@
     group: tomcat
     creates: /opt/tomcat/bin/catalina.sh
 
-- name: Start Tomcat9
-  shell: /opt/tomcat/bin/catalina.sh start
+- name: Restart Tomcat9
+  shell: |
+    /opt/tomcat/bin/catalina.sh stop
+    /opt/tomcat/bin/catalina.sh start
   register: tomcat_start_result
 
 - name: Tomcat Status

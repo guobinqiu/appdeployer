@@ -1,0 +1,69 @@
+---
+- name: Update all packages
+  yum:
+    update_cache: yes
+
+# - name: Intall NodeJS dependencies
+#   yum:
+#     name: "{{ item }}"
+#     state: present
+#   with_items:
+#     - gcc
+#     - gcc-c++
+#     - make
+#     - centos-release-scl
+#     - devtoolset-10
+
+# - name: Install required Python version
+#   package:
+#     name: python36
+#     state: present
+
+# - name: Download NodeJS source code
+#   ansible.builtin.get_url:
+#     url: https://nodejs.org/dist/v19.9.0/node-v19.9.0.tar.gz
+#     dest: /tmp
+
+# - name: Extract NodeJS
+#   ansible.builtin.unarchive:
+#     src: /tmp/node-v19.9.0.tar.gz
+#     dest: "/tmp/"
+#     remote_src: yes
+
+# - name: Compile NodeJS
+#   shell: |
+#     ./configure
+#     make
+#   environment:
+#     CC: /opt/rh/devtoolset-10/root/usr/bin/gcc
+#     CXX: /opt/rh/devtoolset-10/root/usr/bin/g++
+#     PYTHON: /usr/bin/python3.6
+#   args:
+#     chdir: /tmp/node-v19.9.0
+
+# - name: Install NodeJS
+#   command: make install
+#   args:
+#     chdir: "/tmp/node-v19.9.0"
+  
+# - name: Source .bash_profile  
+#   shell: source ~/.bash_profile
+#   args:  
+#     executable: /bin/bash
+
+- name: Install nvm
+  ansible.builtin.shell: >
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+  args:
+    creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+  register: install_nvm_result
+
+- name: Debug nvm status
+  debug:
+    var: install_nvm_result.stdout_lines
+
+- name: Install NodeJS
+  shell: bash -lc 'nvm install v8.16.0'
+
+- name: Set default
+  shell: bash -lc 'nvm alias default v8.16.0'

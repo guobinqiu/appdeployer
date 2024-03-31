@@ -1,0 +1,27 @@
+---
+# - name: Update all packages
+#   apt:
+#     update_cache: yes
+#   become: yes
+
+# - name: Install curl
+#   apt:
+#     name: curl
+#   become: yes  
+
+# - name: Install nvm
+#   ansible.builtin.shell: >
+#     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+#   args:
+#     creates: "{{ ansible_env.HOME }}/.nvm/nvm.sh"
+#   register: install_nvm_result
+
+# - name: Debug nvm status
+#   debug:
+#     var: install_nvm_result.stdout_lines
+
+- name: Install NodeJS
+  shell: bash -lc 'nvm install v8.16.0'
+
+- name: Set default
+  shell: bash -lc 'nvm alias default v8.16.0'

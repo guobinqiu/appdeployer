@@ -21,7 +21,11 @@
     var: install_nvm_result.stdout_lines
 
 - name: Install NodeJS
-  shell: bash -lc 'nvm install v8.16.0'
+  shell: "source ~/.nvm/nvm.sh && nvm install v8.16.0"
+  args:
+    executable: /bin/bash
 
 - name: Set default
-  shell: bash -lc 'nvm alias default v8.16.0'
+  shell: "source ~/.nvm/nvm.sh && nvm alias default v8.16.0"
+  args:
+    executable: /bin/bash

@@ -1,5 +1,5 @@
 ---
-- name: Update all packages
+- name: Update package list
   yum:
     update_cache: yes
   become: yes
@@ -18,5 +18,5 @@
 - name: Install NodeJS
   shell: bash -lc 'nvm install v8.16.0'
 
-- name: Set default
+- name: Set default NodeJS
   shell: bash -lc 'nvm alias default v8.16.0'

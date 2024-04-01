@@ -1,5 +1,5 @@
 ---
-- name: Update all packages
+- name: Update package list
   apt:
     update_cache: yes
   become: yes
@@ -25,7 +25,7 @@
   args:
     executable: /bin/bash
 
-- name: Set default
+- name: Set default NodeJS
   shell: "source ~/.nvm/nvm.sh && nvm alias default v8.16.0"
   args:
     executable: /bin/bash

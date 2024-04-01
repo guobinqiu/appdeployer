@@ -1,9 +1,9 @@
 ---
-- name: Update all packages
+- name: Update package list
   apt:
     update_cache: yes
 
-- name: Intall go dependencies
+- name: Intall Go dependencies
   apt:
     name: "{{ item }}"
     state: present
@@ -11,39 +11,33 @@
     - gcc
     - make
 
-- name: Intall first go
+- name: Intall bootstrap Go
   apt:
     name: golang
     state: present
 
-- name: Download Go source code
-  ansible.builtin.get_url:
+- name: Download Go Archive
+  get_url:
     url: "{{ go_download_url }}"
     dest: /tmp
 
-- name: Untarred directory
-  file:
-    path: "/tmp/{{ go_version }}"
-    state: directory
-    mode: 0755
-
-- name: Extract Go
-  ansible.builtin.unarchive:
+- name: Unarchive Go
+  unarchive:
     src: "/tmp/{{ go_version }}.src.tar.gz"
-    dest: "/tmp/{{ go_version }}"
+    dest: "/tmp/"
     remote_src: yes
     creates: "/tmp/{{ go_version }}/go"
 
-- name: Build Go
+- name: Compile Go
   command: "./make.bash"
   args:
     chdir: "/tmp/{{ go_version }}/go/src"
 
-- name: Copy to install directory
-  ansible.builtin.copy:
+- name: Copy to target dir
+  copy:
     src: "/tmp/{{ go_version }}/go"
     dest: "{{ go_install_dir }}"
-    remote_src: true
+    remote_src: yes
 
 - name: Update PATH environment variable
   lineinfile:
@@ -52,7 +46,7 @@
     create: yes
     line: "export PATH={{ go_install_dir }}/go/bin:$PATH"
 
-- name: Reload shell environment
+- name: Reload PATH environment variable
   shell: source /etc/profile.d/go.sh
   args:
     executable: /bin/bash

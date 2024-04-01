@@ -1,5 +1,5 @@
 ---
-- name: Update all packages
+- name: Update package list
   apt:
     update_cache: yes
 
@@ -13,17 +13,7 @@
     name: maven
     state: present
 
-# - name: Install Tomcat
-#   apt:
-#     name: tomcat9
-#     state: present
-
-# - name: Restart Tomcat
-#   shell: |
-#     kill $(ps -ef | grep 'catalina' | grep -v 'grep' | awk '{print $2}')
-#     /usr/share/tomcat9/bin/catalina.sh start
-
-- name: Create a non-interactive system user for Tomcat
+- name: Create a non-interactive system user for Tomcat9
   user:
     name: tomcat
     createhome: yes
@@ -32,13 +22,13 @@
     system: yes
     state: present
 
-- name: Download Tomcat9 tarball
+- name: Download Tomcat9 Archive
   get_url:
     url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.87/bin/apache-tomcat-9.0.87.tar.gz
     dest: /tmp/apache-tomcat-9.0.87.tar.gz
     mode: 0644
 
-- name: Extract Tomcat9 tarball
+- name: Unarchive Tomcat9
   unarchive:
     src: /tmp/apache-tomcat-9.0.87.tar.gz
     dest: /opt/tomcat
@@ -48,13 +38,10 @@
     group: tomcat
     creates: /opt/tomcat/bin/catalina.sh
 
-# or install as systemctl service with User=tomcat and Group=tomcat
-- name: Restart Tomcat9
-  shell: |
-    /opt/tomcat/bin/catalina.sh stop
-    /opt/tomcat/bin/catalina.sh start
-  register: tomcat_start_result
+- name: Stop Tomcat9
+  command: /opt/tomcat/bin/catalina.sh stop
 
-- name: Tomcat Status
-  debug:
-    var: tomcat_start_result.stdout_lines
+- name: Start Tomcat9
+  shell: USE_NOHUP=true /opt/tomcat/bin/catalina.sh start
+  args:
+    executable: /bin/bash

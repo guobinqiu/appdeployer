@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"strings"
 	"time"
@@ -20,11 +21,38 @@ type SSHKeyManager struct {
 	KeyBitSize  int
 }
 
-func NewSSHKeyManager(homeDir string, keyFileName string, keyBitSize int) *SSHKeyManager {
+func NewDefaultSSHKeyManager() *SSHKeyManager {
+	u, _ := user.Current()
 	return &SSHKeyManager{
-		HomeDir:     homeDir,
-		KeyFileName: keyFileName,
-		KeyBitSize:  keyBitSize,
+		HomeDir:     u.HomeDir,
+		KeyFileName: "id_rsa_deployer",
+		KeyBitSize:  2048,
+	}
+}
+
+func NewSSHKeyManager(options ...func(*SSHKeyManager)) *SSHKeyManager {
+	manager := NewDefaultSSHKeyManager()
+	for _, option := range options {
+		option(manager)
+	}
+	return manager
+}
+
+func WithHomeDir(homeDir string) func(*SSHKeyManager) {
+	return func(m *SSHKeyManager) {
+		m.HomeDir = homeDir
+	}
+}
+
+func WithKeyFileName(keyFileName string) func(*SSHKeyManager) {
+	return func(m *SSHKeyManager) {
+		m.KeyFileName = keyFileName
+	}
+}
+
+func WithKeyBitSize(keyBitSize int) func(*SSHKeyManager) {
+	return func(m *SSHKeyManager) {
+		m.KeyBitSize = keyBitSize
 	}
 }
 
@@ -45,7 +73,7 @@ func (m *SSHKeyManager) GenerateAndSaveKeyPair() error {
 	return nil
 }
 
-func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username string, password string) error {
+func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username string, password string, path ...string) error {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -73,7 +101,12 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 	}
 	defer session.Close()
 
-	remoteAuthorizedKeysPath := filepath.Join("~/.ssh/authorized_keys") // Note that this assumes the user's home directory is the same on the remote server
+	var remoteAuthorizedKeysPath string
+	if len(path) > 0 {
+		remoteAuthorizedKeysPath = path[0]
+	} else {
+		remoteAuthorizedKeysPath = "~/.ssh/authorized_keys"
+	}
 	cmd := fmt.Sprintf("echo '%s' >> %s", pubKeyStr, remoteAuthorizedKeysPath)
 	if err := session.Run(cmd); err != nil {
 		return fmt.Errorf("failed to add the public key to the remote authorized_keys file: %w", err)
@@ -101,7 +134,7 @@ func (m *SSHKeyManager) savePrivateKey(privateKey *rsa.PrivateKey) error {
 			return fmt.Errorf("failed to create .ssh directory: %w", err)
 		}
 	}
-	privateKeyFile := filepath.Join(sshDir, m.KeyFileName+"_private.pem")
+	privateKeyFile := filepath.Join(sshDir, m.KeyFileName)
 	privateKeyPEM := pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",

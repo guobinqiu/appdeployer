@@ -8,7 +8,10 @@ import (
 
 func main() {
 	homeDir := os.Getenv("HOME")
-	keyManager := ansible.NewSSHKeyManager(homeDir, "deployer", 2048)
+	keyManager := ansible.NewSSHKeyManager(
+		ansible.WithHomeDir(homeDir),
+		ansible.WithKeyFileName("deployer"),
+	)
 	if err := keyManager.GenerateAndSaveKeyPair(); err != nil {
 		panic(err)
 	}

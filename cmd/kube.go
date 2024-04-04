@@ -61,6 +61,7 @@ var kubeCmd = &cobra.Command{
 	Use:   "kube",
 	Short: "Deploy to kubernetes cluster",
 	Run: func(cmd *cobra.Command, args []string) {
+		setDefaultOptions()
 		setDockerOptions()
 		setKubeOptions()
 

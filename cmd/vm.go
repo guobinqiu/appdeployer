@@ -13,6 +13,8 @@ var VMCmd = &cobra.Command{
 	Use:   "vm",
 	Short: "Deploy to VM",
 	Run: func(cmd *cobra.Command, args []string) {
+		setDefaultOptions()
+
 		// Pull or clone into appdir
 		if gitOptions.Pull {
 			if helpers.IsBlank(gitOptions.Repo) {

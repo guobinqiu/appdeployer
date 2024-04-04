@@ -27,9 +27,6 @@ var rootCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "App deployer",
 	Long:  "App deployer is used to deploy your application to any kubernetes clusters as well as VMs via ansible",
-	Run: func(cmd *cobra.Command, args []string) {
-		setDefaultOptions()
-	},
 }
 
 func init() {

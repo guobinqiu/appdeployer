@@ -3,61 +3,40 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 
 	"github.com/guobinqiu/deployer/docker"
 	"github.com/guobinqiu/deployer/git"
 	"github.com/guobinqiu/deployer/helpers"
-	"github.com/guobinqiu/deployer/resources"
+	"github.com/guobinqiu/deployer/kube"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-type DefaultOptions struct {
-	Kubeconfig      string
-	AppDir          string
-	ApplicationName string
-	Namespace       string
+type KubeOptions struct {
+	Kubeconfig        string
+	ApplicationName   string
+	Namespace         string
+	ingressOptions    kube.IngressOptions
+	serviceOptions    kube.ServiceOptions
+	deploymentOptions kube.DeploymentOptions
 }
 
-var (
-	defaultOptions    DefaultOptions
-	gitOptions        git.GitOptions
-	dockerOptions     docker.DockerOptions
-	ingressOptions    resources.IngressOptions
-	serviceOptions    resources.ServiceOptions
-	deploymentOptions resources.DeploymentOptions
-)
+var dockerOptions docker.DockerOptions
+var kubeOptions KubeOptions
 
 func init() {
-	viper.SetConfigFile("./config.ini")
-	viper.ReadInConfig()
-
 	// set default values
-	viper.SetDefault("default.kubeconfig", helpers.GetDefaultKubeConfig())
-	viper.SetDefault("git.pull", false)
 	viper.SetDefault("docker.dockerconfig", helpers.GetDefaultDockerConfig())
 	viper.SetDefault("docker.dockerfile", "./Dockerfile")
 	viper.SetDefault("docker.registry", docker.DOCKERHUB)
 	viper.SetDefault("docker.tag", "latest")
-	viper.SetDefault("ingress.tls", true)
-	viper.SetDefault("service.port", 8000)
-	viper.SetDefault("deployment.replicas", 1)
-	viper.SetDefault("deployment.port", 8000)
-
-	// default
-	kubeCmd.Flags().StringVar(&defaultOptions.Kubeconfig, "default.kubeconfig", viper.GetString("default.kubeconfig"), "default.kubeconfig")
-	kubeCmd.Flags().StringVar(&defaultOptions.AppDir, "default.appdir", viper.GetString("default.appdir"), "default.appdir")
-	kubeCmd.Flags().StringVar(&defaultOptions.ApplicationName, "default.applicationName", viper.GetString("default.applicationName"), "default.applicationName")
-	kubeCmd.Flags().StringVar(&defaultOptions.Namespace, "default.namespace", viper.GetString("default.namespace"), "default.namespace")
-
-	// git
-	kubeCmd.Flags().BoolVar(&gitOptions.Pull, "git.pull", viper.GetBool("git.pull"), "git.pull")
-	kubeCmd.Flags().StringVar(&gitOptions.Repo, "git.repo", viper.GetString("git.repo"), "git.repo")
-	kubeCmd.Flags().StringVar(&gitOptions.Username, "git.username", viper.GetString("git.username"), "git.username")
-	kubeCmd.Flags().StringVar(&gitOptions.Password, "git.password", viper.GetString("git.password"), "git.password")
+	viper.SetDefault("kube.kubeconfig", helpers.GetDefaultKubeConfig())
+	viper.SetDefault("kube.ingress.tls", true)
+	viper.SetDefault("kube.service.port", 8000)
+	viper.SetDefault("kube.deployment.replicas", 1)
+	viper.SetDefault("kube.deployment.port", 8000)
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")
@@ -68,31 +47,27 @@ func init() {
 	kubeCmd.Flags().StringVar(&dockerOptions.Repository, "docker.repository", viper.GetString("docker.repository"), "docker.repository")
 	kubeCmd.Flags().StringVar(&dockerOptions.Tag, "docker.tag", viper.GetString("docker.tag"), "docker.tag")
 
-	// ingress
-	kubeCmd.Flags().StringVar(&ingressOptions.Host, "ingress.host", viper.GetString("ingress.host"), "ingress.host")
-	kubeCmd.Flags().BoolVar(&ingressOptions.TLS, "ingress.tls", viper.GetBool("ingress.tls"), "ingress.tls")
-
-	// service
-	kubeCmd.Flags().Int32Var(&serviceOptions.Port, "service.port", viper.GetInt32("service.port"), "service.port")
-
-	// deployment
-	kubeCmd.Flags().Int32Var(&deploymentOptions.Replicas, "deployment.replicas", viper.GetInt32("deployment.replicas"), "deployment.replicas")
-	kubeCmd.Flags().Int32Var(&deploymentOptions.Port, "deployment.port", viper.GetInt32("deployment.port"), "deployment.port")
+	//kube
+	kubeCmd.Flags().StringVar(&kubeOptions.Kubeconfig, "kube.kubeconfig", viper.GetString("kube.kubeconfig"), "kube.kubeconfig")
+	kubeCmd.Flags().StringVar(&kubeOptions.Namespace, "kube.namespace", viper.GetString("kube.namespace"), "kube.namespace")
+	kubeCmd.Flags().StringVar(&kubeOptions.ingressOptions.Host, "kube.ingress.host", viper.GetString("kube.ingress.host"), "kube.ingress.host")
+	kubeCmd.Flags().BoolVar(&kubeOptions.ingressOptions.TLS, "kube.ingress.tls", viper.GetBool("kube.ingress.tls"), "kube.ingress.tls")
+	kubeCmd.Flags().Int32Var(&kubeOptions.serviceOptions.Port, "kube.service.port", viper.GetInt32("kube.service.port"), "kube.service.port")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Replicas, "kube.deployment.replicas", viper.GetInt32("kube.deployment.replicas"), "kube.deployment.replicas")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Port, "kube.deployment.port", viper.GetInt32("kube.deployment.port"), "kube.deployment.port")
 }
 
 var kubeCmd = &cobra.Command{
 	Use:   "kube",
 	Short: "Deploy to kubernetes cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		setDefault()
-
-		//TODO handle timeout or cancel
-		ctx := context.TODO()
+		setDockerOptions()
+		setKubeOptions()
 
 		// Pull or clone into appdir
 		if gitOptions.Pull {
 			if helpers.IsBlank(gitOptions.Repo) {
-				panic("--git.repo is required")
+				panic("git.repo is required")
 			}
 			if err := git.Pull(gitOptions); err != nil {
 				panic(err)
@@ -104,6 +79,9 @@ var kubeCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
+
+		//TODO handle timeout or cancel
+		ctx := context.TODO()
 
 		// Build an app into a docker image
 		if err := dockerservice.BuildImage(ctx, dockerOptions); err != nil {
@@ -118,7 +96,7 @@ var kubeCmd = &cobra.Command{
 		dockerservice.Close()
 
 		// Create a kubernetes client by the specified kubeconfig
-		config, err := clientcmd.BuildConfigFromFlags("", defaultOptions.Kubeconfig)
+		config, err := clientcmd.BuildConfigFromFlags("", kubeOptions.Kubeconfig)
 		if err != nil {
 			panic(err)
 		}
@@ -129,75 +107,52 @@ var kubeCmd = &cobra.Command{
 		}
 
 		// Update (or create if not exists) kubernetes resource objects
-		if err := resources.CreateOrUpdateNamespace(clientset, ctx, defaultOptions.Namespace); err != nil {
+		if err := kube.CreateOrUpdateNamespace(clientset, ctx, kubeOptions.Namespace); err != nil {
 			panic(err)
 		}
 
-		if err := resources.CreateOrUpdateDockerSecret(clientset, ctx, resources.DockerSecretOptions{
-			ApplicationName: defaultOptions.ApplicationName,
-			Namespace:       defaultOptions.Namespace,
+		if err := kube.CreateOrUpdateDockerSecret(clientset, ctx, kube.DockerSecretOptions{
+			ApplicationName: kubeOptions.ApplicationName,
+			Namespace:       kubeOptions.Namespace,
 			DockerOptions:   dockerOptions,
 		}); err != nil {
 			panic(err)
 		}
 
-		if err := resources.CreateOrUpdateServiceAccount(clientset, ctx, resources.ServiceAccountOptions{
-			ApplicationName: defaultOptions.ApplicationName,
-			Namespace:       defaultOptions.Namespace,
+		if err := kube.CreateOrUpdateServiceAccount(clientset, ctx, kube.ServiceAccountOptions{
+			ApplicationName: kubeOptions.ApplicationName,
+			Namespace:       kubeOptions.Namespace,
 		}); err != nil {
 			panic(err)
 		}
 
-		deploymentOptions.ApplicationName = defaultOptions.ApplicationName
-		deploymentOptions.Namespace = defaultOptions.Namespace
-		deploymentOptions.Image = dockerOptions.Image()
-		if err := resources.CreateOrUpdateDeployment(clientset, ctx, deploymentOptions); err != nil {
+		kubeOptions.deploymentOptions.ApplicationName = kubeOptions.ApplicationName
+		kubeOptions.deploymentOptions.Namespace = kubeOptions.Namespace
+		kubeOptions.deploymentOptions.Image = dockerOptions.Image()
+		if err := kube.CreateOrUpdateDeployment(clientset, ctx, kubeOptions.deploymentOptions); err != nil {
 			panic(err)
 		}
 
-		serviceOptions.ApplicationName = defaultOptions.ApplicationName
-		serviceOptions.Namespace = defaultOptions.Namespace
-		serviceOptions.TargetPort = deploymentOptions.Port
-		if err := resources.CreateOrUpdateService(clientset, ctx, serviceOptions); err != nil {
+		kubeOptions.serviceOptions.ApplicationName = kubeOptions.ApplicationName
+		kubeOptions.serviceOptions.Namespace = kubeOptions.Namespace
+		kubeOptions.serviceOptions.TargetPort = kubeOptions.deploymentOptions.Port
+		if err := kube.CreateOrUpdateService(clientset, ctx, kubeOptions.serviceOptions); err != nil {
 			panic(err)
 		}
 
-		ingressOptions.ApplicationName = defaultOptions.ApplicationName
-		ingressOptions.Namespace = defaultOptions.Namespace
-		if err := resources.CreateOrUpdateIngress(clientset, ctx, ingressOptions); err != nil {
+		kubeOptions.ingressOptions.ApplicationName = kubeOptions.ApplicationName
+		kubeOptions.ingressOptions.Namespace = kubeOptions.Namespace
+		if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.ingressOptions); err != nil {
 			panic(err)
 		}
 	},
 }
 
-func setDefault() {
-	defaultOptions.AppDir = helpers.ExpandUser(defaultOptions.AppDir)
-	if helpers.IsBlank(defaultOptions.AppDir) {
-		panic("--default.appdir is required")
-	}
-
-	exist, err := helpers.IsDirExist(defaultOptions.AppDir)
-	if err != nil {
-		panic(err)
-	}
-	if !exist {
-		panic("appdir does not exist")
-	}
-
-	gitOptions.AppDir = defaultOptions.AppDir
+func setDockerOptions() {
 	dockerOptions.AppDir = defaultOptions.AppDir
 
-	defaultOptions.Kubeconfig = helpers.ExpandUser(defaultOptions.Kubeconfig)
-	exist, err = helpers.IsFileExist(defaultOptions.Kubeconfig)
-	if err != nil {
-		panic(err)
-	}
-	if !exist {
-		panic("kubeconfig does not exist")
-	}
-
 	dockerOptions.Dockerconfig = helpers.ExpandUser(dockerOptions.Dockerconfig)
-	exist, err = helpers.IsFileExist(dockerOptions.Dockerconfig)
+	exist, err := helpers.IsFileExist(dockerOptions.Dockerconfig)
 	if err != nil {
 		panic(err)
 	}
@@ -205,24 +160,29 @@ func setDefault() {
 		panic("dockerconfig does not exist")
 	}
 
-	applicationName := filepath.Base(defaultOptions.AppDir)
-
-	if helpers.IsBlank(defaultOptions.ApplicationName) {
-		defaultOptions.ApplicationName = applicationName
-	}
-
-	if helpers.IsBlank(defaultOptions.Namespace) {
-		defaultOptions.Namespace = applicationName
-	}
-
-	if helpers.IsBlank(ingressOptions.Host) {
-		ingressOptions.Host = fmt.Sprintf("%s.com", applicationName)
-	}
-
 	if helpers.IsBlank(dockerOptions.Repository) && dockerOptions.Registry == docker.DOCKERHUB {
 		if helpers.IsBlank(dockerOptions.Username) {
-			panic("--docker.username is required")
+			panic("docker.username is required")
 		}
-		dockerOptions.Repository = fmt.Sprintf("%s/%s", dockerOptions.Username, applicationName)
+		dockerOptions.Repository = fmt.Sprintf("%s/%s", dockerOptions.Username, defaultOptions.ApplicationName)
+	}
+}
+
+func setKubeOptions() {
+	kubeOptions.Kubeconfig = helpers.ExpandUser(kubeOptions.Kubeconfig)
+	exist, err := helpers.IsFileExist(kubeOptions.Kubeconfig)
+	if err != nil {
+		panic(err)
+	}
+	if !exist {
+		panic("kubeconfig does not exist")
+	}
+
+	if helpers.IsBlank(kubeOptions.Namespace) {
+		kubeOptions.Namespace = defaultOptions.ApplicationName
+	}
+
+	if helpers.IsBlank(kubeOptions.ingressOptions.Host) {
+		kubeOptions.ingressOptions.Host = fmt.Sprintf("%s.com", defaultOptions.ApplicationName)
 	}
 }

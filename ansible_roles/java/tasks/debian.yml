@@ -38,6 +38,11 @@
     group: tomcat
     creates: /opt/tomcat/bin/catalina.sh
 
+- name: Copy war file to remote Tomcat webapps directory
+  copy:
+    src: "{{ appdir }}"
+    dest: "/opt/tomcat/webapps/"
+
 - name: Stop Tomcat9
   command: /opt/tomcat/bin/catalina.sh stop
 

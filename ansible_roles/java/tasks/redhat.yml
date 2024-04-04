@@ -1,55 +1,55 @@
 ---
-# - name: Update package list
-#   yum:
-#     update_cache: yes
-
-# - name: Install JDK 11
-#   yum:
-#     name: java-11-openjdk-devel
-#     state: present
-
-# - name: Set default to Java 11
-#   command: update-alternatives --set java java-11-openjdk.{{ ansible_architecture }}
-
-# - name: Install Maven
-#   yum:
-#     name: maven
-#     state: present
-
-# - name: Create a non-interactive system user for Tomcat9
-#   user:
-#     name: tomcat
-#     createhome: yes
-#     home: /opt/tomcat
-#     shell: /sbin/nologin
-#     system: yes
-#     state: present
-
-# - name: Download Tomcat9 Archive
-#   get_url:
-#     url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.87/bin/apache-tomcat-9.0.87.tar.gz
-#     dest: /tmp/apache-tomcat-9.0.87.tar.gz
-#     mode: 0644
-
-# - name: Unarchive Tomcat9
-#   unarchive:
-#     src: /tmp/apache-tomcat-9.0.87.tar.gz
-#     dest: /opt/tomcat
-#     remote_src: yes
-#     extra_opts: "--strip-components=1"
-#     owner: tomcat
-#     group: tomcat
-#     creates: /opt/tomcat/bin/catalina.sh
-
-# - name: Stop Tomcat9
-#   command: /opt/tomcat/bin/catalina.sh stop
-
-# - name: Start Tomcat9
-#   shell: USE_NOHUP=true /opt/tomcat/bin/catalina.sh start
-#   args:
-#     executable: /bin/bash
-
-- name: Install Supervisor
+- name: Update package list
   yum:
-    name: supervisor
+    update_cache: yes
+
+- name: Install JDK 11
+  yum:
+    name: java-11-openjdk-devel
     state: present
+
+- name: Set default to Java 11
+  command: update-alternatives --set java java-11-openjdk.{{ ansible_architecture }}
+
+- name: Install Maven
+  yum:
+    name: maven
+    state: present
+
+- name: Create a non-interactive system user for Tomcat9
+  user:
+    name: tomcat
+    createhome: yes
+    home: /opt/tomcat
+    shell: /sbin/nologin
+    system: yes
+    state: present
+
+- name: Download Tomcat9 Archive
+  get_url:
+    url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.87/bin/apache-tomcat-9.0.87.tar.gz
+    dest: /tmp/apache-tomcat-9.0.87.tar.gz
+    mode: 0644
+
+- name: Unarchive Tomcat9
+  unarchive:
+    src: /tmp/apache-tomcat-9.0.87.tar.gz
+    dest: /opt/tomcat
+    remote_src: yes
+    extra_opts: "--strip-components=1"
+    owner: tomcat
+    group: tomcat
+    creates: /opt/tomcat/bin/catalina.sh
+
+- name: Copy war file to remote Tomcat webapps directory
+  copy:
+    src: "{{ appdir }}"
+    dest: "/opt/tomcat/webapps/"
+
+- name: Stop Tomcat9
+  command: /opt/tomcat/bin/catalina.sh stop
+
+- name: Start Tomcat9
+  shell: USE_NOHUP=true /opt/tomcat/bin/catalina.sh start
+  args:
+    executable: /bin/bash

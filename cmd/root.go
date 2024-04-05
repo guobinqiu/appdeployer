@@ -45,7 +45,7 @@ func init() {
 
 	// Add sub commands to root command
 	rootCmd.AddCommand(kubeCmd)
-	rootCmd.AddCommand(VMCmd)
+	rootCmd.AddCommand(vmCmd)
 }
 
 func setDefaultOptions() {

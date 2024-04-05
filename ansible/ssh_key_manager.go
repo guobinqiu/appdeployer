@@ -73,7 +73,7 @@ func (m *SSHKeyManager) GenerateAndSaveKeyPair() error {
 	return nil
 }
 
-func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username string, password string, path ...string) error {
+func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username string, password string, remoteAuthorizedKeysPath string) error {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -101,12 +101,6 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 	}
 	defer session.Close()
 
-	var remoteAuthorizedKeysPath string
-	if len(path) > 0 {
-		remoteAuthorizedKeysPath = path[0]
-	} else {
-		remoteAuthorizedKeysPath = "~/.ssh/authorized_keys"
-	}
 	cmd := fmt.Sprintf("echo '%s' >> %s", pubKeyStr, remoteAuthorizedKeysPath)
 	if err := session.Run(cmd); err != nil {
 		return fmt.Errorf("failed to add the public key to the remote authorized_keys file: %w", err)

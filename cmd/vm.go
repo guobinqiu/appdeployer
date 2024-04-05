@@ -102,19 +102,23 @@ func setSSHOptions() {
 }
 
 func setAnsibleOptions() {
+	ansibleOptions.AnsibleUser = sshOptions.Username
+
+	//check hosts
 	if helpers.IsBlank(ansibleOptions.Hosts) {
 		panic("ansible.hosts is required")
 	}
+	//...
+
+	//check role in ["go", "java", "nodejs"]
+	if helpers.IsBlank(ansibleOptions.Role) {
+		panic("ansible.role is required")
+	}
+	//...
 
 	if helpers.IsBlank(ansibleOptions.AnsibleBecomePassword) {
 		panic("ansible.ansible_become_password is required")
 	}
-
-	ansibleOptions.AnsibleUser = sshOptions.Username
-
-	//check hosts
-
-	//check role in ["go", "java", "nodejs"]
 }
 
 func setupAnsible(ansibleOptions AnsibleOptions, sshOptions SSHOptions) error {

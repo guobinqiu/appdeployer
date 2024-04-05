@@ -63,6 +63,7 @@ func init() {
 	vmCmd.Flags().StringVar(&ansibleOptions.AnsibleBecomePassword, "ansible.ansible_become_password", viper.GetString("ansible.ansible_become_password"), "ansible.ansible_become_password")
 }
 
+// go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=java
 var vmCmd = &cobra.Command{
 	Use:   "vm",
 	Short: "Deploy to VM",

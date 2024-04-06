@@ -66,25 +66,25 @@ var kubeCmd = &cobra.Command{
 		gitPull()
 
 		// Create a docker service
-		// dockerservice, err := docker.NewDockerService()
-		// if err != nil {
-		// 	panic(err)
-		// }
+		dockerservice, err := docker.NewDockerService()
+		if err != nil {
+			panic(err)
+		}
 
 		//TODO handle timeout or cancel
 		ctx := context.TODO()
 
-		// // Build an app into a docker image
-		// if err := dockerservice.BuildImage(ctx, dockerOptions); err != nil {
-		// 	panic(err)
-		// }
+		// Build an app into a docker image
+		if err := dockerservice.BuildImage(ctx, dockerOptions); err != nil {
+			panic(err)
+		}
 
-		// // Push the docker image to docker registry
-		// if err := dockerservice.PushImage(ctx, dockerOptions); err != nil {
-		// 	panic(err)
-		// }
+		// Push the docker image to docker registry
+		if err := dockerservice.PushImage(ctx, dockerOptions); err != nil {
+			panic(err)
+		}
 
-		// dockerservice.Close()
+		dockerservice.Close()
 
 		// Create a kubernetes client by the specified kubeconfig
 		config, err := clientcmd.BuildConfigFromFlags("", kubeOptions.Kubeconfig)

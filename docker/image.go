@@ -32,11 +32,11 @@ type DockerOptions struct {
 }
 
 func (opts DockerOptions) Validate() error {
-	if helpers.IsBlank(opts.Registry) && opts.Registry != DOCKERHUB {
-		return errors.New("--docker.registry is required")
+	if helpers.IsBlank(opts.Registry) {
+		return errors.New("docker.registry is required")
 	}
 	if helpers.IsBlank(opts.Repository) {
-		return errors.New("--docker.repository is required")
+		return errors.New("docker.repository is required")
 	}
 	return nil
 }

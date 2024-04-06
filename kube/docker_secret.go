@@ -16,8 +16,8 @@ import (
 )
 
 type DockerSecretOptions struct {
-	ApplicationName string
-	Namespace       string
+	Name      string
+	Namespace string
 	docker.DockerOptions
 }
 
@@ -29,7 +29,7 @@ func CreateOrUpdateDockerSecret(clientset *kubernetes.Clientset, ctx context.Con
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "docker-" + opts.ApplicationName,
+			Name:      "docker-" + opts.Name,
 			Namespace: opts.Namespace,
 		},
 		Type: corev1.SecretTypeDockerConfigJson,
@@ -54,6 +54,8 @@ func buildDockerAuthConfig(opts docker.DockerOptions) ([]byte, error) {
 	var dockerConfig map[string]interface{}
 
 	if !helpers.IsBlank(opts.Registry) && !helpers.IsBlank(opts.Username) && !helpers.IsBlank(opts.Password) {
+		fmt.Println("Using username password auth")
+
 		// 构造Docker配置信息
 		dockerConfig = map[string]interface{}{
 			"auths": map[string]interface{}{
@@ -63,6 +65,8 @@ func buildDockerAuthConfig(opts docker.DockerOptions) ([]byte, error) {
 			},
 		}
 	} else if !helpers.IsBlank(opts.Dockerconfig) {
+		fmt.Println("Using config file auth: " + opts.Dockerconfig)
+
 		//读取Docker配置文件
 		configData, err := os.ReadFile(opts.Dockerconfig)
 		if err != nil {
@@ -75,7 +79,7 @@ func buildDockerAuthConfig(opts docker.DockerOptions) ([]byte, error) {
 
 		// 确保配置中有对应Registry的auth数据
 		registryData, ok := dockerConfig["auths"].(map[string]interface{})
-		if !ok || registryData[opts.Registry] != nil {
+		if !ok || registryData[opts.Registry] == nil {
 			return nil, fmt.Errorf("no auth data found for registry %s in the provided Docker config", opts.Registry)
 		}
 	} else {

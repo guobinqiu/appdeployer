@@ -12,16 +12,16 @@ import (
 )
 
 type ServiceOptions struct {
-	ApplicationName string
-	Namespace       string
-	Port            int32
-	TargetPort      int32
+	Name       string
+	Namespace  string
+	Port       int32
+	TargetPort int32
 }
 
 func CreateOrUpdateService(clientset *kubernetes.Clientset, ctx context.Context, opts ServiceOptions) error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      opts.ApplicationName,
+			Name:      opts.Name,
 			Namespace: opts.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
@@ -34,7 +34,7 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ctx context.Context,
 				},
 			},
 			Selector: map[string]string{
-				"name": opts.ApplicationName,
+				"name": opts.Name,
 			},
 		},
 	}

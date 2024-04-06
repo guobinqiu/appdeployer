@@ -11,19 +11,19 @@ import (
 )
 
 type ServiceAccountOptions struct {
-	ApplicationName string
-	Namespace       string
+	Name      string
+	Namespace string
 }
 
 func CreateOrUpdateServiceAccount(clientset *kubernetes.Clientset, ctx context.Context, opts ServiceAccountOptions) error {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      opts.ApplicationName,
+			Name:      opts.Name,
 			Namespace: opts.Namespace,
 		},
 		ImagePullSecrets: []corev1.LocalObjectReference{
 			{
-				Name: "docker-" + opts.ApplicationName,
+				Name: "docker-" + opts.Name,
 			},
 		},
 	}

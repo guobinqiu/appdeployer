@@ -10,8 +10,8 @@ import (
 )
 
 type DefaultOptions struct {
-	AppDir          string
-	ApplicationName string
+	AppDir  string
+	AppName string
 }
 
 var (
@@ -35,7 +35,7 @@ func init() {
 
 	// default
 	rootCmd.PersistentFlags().StringVar(&defaultOptions.AppDir, "default.appdir", viper.GetString("default.appdir"), "default.appdir")
-	rootCmd.PersistentFlags().StringVar(&defaultOptions.ApplicationName, "default.applicationName", viper.GetString("default.applicationName"), "default.applicationName")
+	rootCmd.PersistentFlags().StringVar(&defaultOptions.AppName, "default.appname", viper.GetString("default.appname"), "default.appname")
 
 	// git
 	rootCmd.Flags().BoolVar(&gitOptions.Pull, "git.pull", viper.GetBool("git.pull"), "git.pull")
@@ -62,17 +62,14 @@ func setDefaultOptions() {
 		panic("appdir does not exist")
 	}
 
-	gitOptions.AppDir = defaultOptions.AppDir
-
-	applicationName := filepath.Base(defaultOptions.AppDir)
-
-	if helpers.IsBlank(defaultOptions.ApplicationName) {
-		defaultOptions.ApplicationName = applicationName
+	if helpers.IsBlank(defaultOptions.AppName) {
+		defaultOptions.AppName = filepath.Base(defaultOptions.AppDir)
 	}
 }
 
 // Pull or clone into appdir
 func gitPull() {
+	gitOptions.AppDir = defaultOptions.AppDir
 	if gitOptions.Pull {
 		if helpers.IsBlank(gitOptions.Repo) {
 			panic("git.repo is required")

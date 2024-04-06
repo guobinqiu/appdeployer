@@ -20,10 +20,10 @@ import (
 )
 
 type IngressOptions struct {
-	ApplicationName string
-	Namespace       string
-	Host            string
-	TLS             bool
+	Name      string
+	Namespace string
+	Host      string
+	TLS       bool
 }
 
 func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions) error {
@@ -32,7 +32,7 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 
 	ingress := &networkingv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      opts.ApplicationName,
+			Name:      opts.Name,
 			Namespace: opts.Namespace,
 			Annotations: map[string]string{
 				"nginx.ingress.kubernetes.io/force-ssl-redirect": "true",
@@ -53,7 +53,7 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 									PathType: &pathType,
 									Backend: networkingv1.IngressBackend{
 										Service: &networkingv1.IngressServiceBackend{
-											Name: opts.ApplicationName,
+											Name: opts.Name,
 											Port: networkingv1.ServiceBackendPort{
 												Name: "http",
 											},
@@ -78,7 +78,7 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 				Hosts: []string{
 					opts.Host,
 				},
-				SecretName: "tls-" + opts.ApplicationName,
+				SecretName: "tls-" + opts.Name,
 			},
 		}
 	}
@@ -116,7 +116,7 @@ func CreateOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Contex
 
 	tlsSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "tls-" + opts.ApplicationName,
+			Name: "tls-" + opts.Name,
 		},
 		Type: corev1.SecretTypeTLS,
 		Data: map[string][]byte{

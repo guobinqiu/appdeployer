@@ -15,7 +15,6 @@ import (
 
 type KubeOptions struct {
 	Kubeconfig        string
-	ApplicationName   string
 	Namespace         string
 	ingressOptions    kube.IngressOptions
 	serviceOptions    kube.ServiceOptions
@@ -67,25 +66,25 @@ var kubeCmd = &cobra.Command{
 		gitPull()
 
 		// Create a docker service
-		dockerservice, err := docker.NewDockerService()
-		if err != nil {
-			panic(err)
-		}
+		// dockerservice, err := docker.NewDockerService()
+		// if err != nil {
+		// 	panic(err)
+		// }
 
 		//TODO handle timeout or cancel
 		ctx := context.TODO()
 
-		// Build an app into a docker image
-		if err := dockerservice.BuildImage(ctx, dockerOptions); err != nil {
-			panic(err)
-		}
+		// // Build an app into a docker image
+		// if err := dockerservice.BuildImage(ctx, dockerOptions); err != nil {
+		// 	panic(err)
+		// }
 
-		// Push the docker image to docker registry
-		if err := dockerservice.PushImage(ctx, dockerOptions); err != nil {
-			panic(err)
-		}
+		// // Push the docker image to docker registry
+		// if err := dockerservice.PushImage(ctx, dockerOptions); err != nil {
+		// 	panic(err)
+		// }
 
-		dockerservice.Close()
+		// dockerservice.Close()
 
 		// Create a kubernetes client by the specified kubeconfig
 		config, err := clientcmd.BuildConfigFromFlags("", kubeOptions.Kubeconfig)
@@ -104,35 +103,35 @@ var kubeCmd = &cobra.Command{
 		}
 
 		if err := kube.CreateOrUpdateDockerSecret(clientset, ctx, kube.DockerSecretOptions{
-			ApplicationName: kubeOptions.ApplicationName,
-			Namespace:       kubeOptions.Namespace,
-			DockerOptions:   dockerOptions,
+			Name:          defaultOptions.AppName,
+			Namespace:     kubeOptions.Namespace,
+			DockerOptions: dockerOptions,
 		}); err != nil {
 			panic(err)
 		}
 
 		if err := kube.CreateOrUpdateServiceAccount(clientset, ctx, kube.ServiceAccountOptions{
-			ApplicationName: kubeOptions.ApplicationName,
-			Namespace:       kubeOptions.Namespace,
+			Name:      defaultOptions.AppName,
+			Namespace: kubeOptions.Namespace,
 		}); err != nil {
 			panic(err)
 		}
 
-		kubeOptions.deploymentOptions.ApplicationName = kubeOptions.ApplicationName
+		kubeOptions.deploymentOptions.Name = defaultOptions.AppName
 		kubeOptions.deploymentOptions.Namespace = kubeOptions.Namespace
 		kubeOptions.deploymentOptions.Image = dockerOptions.Image()
 		if err := kube.CreateOrUpdateDeployment(clientset, ctx, kubeOptions.deploymentOptions); err != nil {
 			panic(err)
 		}
 
-		kubeOptions.serviceOptions.ApplicationName = kubeOptions.ApplicationName
+		kubeOptions.serviceOptions.Name = defaultOptions.AppName
 		kubeOptions.serviceOptions.Namespace = kubeOptions.Namespace
 		kubeOptions.serviceOptions.TargetPort = kubeOptions.deploymentOptions.Port
 		if err := kube.CreateOrUpdateService(clientset, ctx, kubeOptions.serviceOptions); err != nil {
 			panic(err)
 		}
 
-		kubeOptions.ingressOptions.ApplicationName = kubeOptions.ApplicationName
+		kubeOptions.ingressOptions.Name = defaultOptions.AppName
 		kubeOptions.ingressOptions.Namespace = kubeOptions.Namespace
 		if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.ingressOptions); err != nil {
 			panic(err)
@@ -156,7 +155,7 @@ func setDockerOptions() {
 		if helpers.IsBlank(dockerOptions.Username) {
 			panic("docker.username is required")
 		}
-		dockerOptions.Repository = fmt.Sprintf("%s/%s", dockerOptions.Username, defaultOptions.ApplicationName)
+		dockerOptions.Repository = fmt.Sprintf("%s/%s", dockerOptions.Username, defaultOptions.AppName)
 	}
 }
 
@@ -171,10 +170,10 @@ func setKubeOptions() {
 	}
 
 	if helpers.IsBlank(kubeOptions.Namespace) {
-		kubeOptions.Namespace = defaultOptions.ApplicationName
+		kubeOptions.Namespace = defaultOptions.AppName
 	}
 
 	if helpers.IsBlank(kubeOptions.ingressOptions.Host) {
-		kubeOptions.ingressOptions.Host = fmt.Sprintf("%s.com", defaultOptions.ApplicationName)
+		kubeOptions.ingressOptions.Host = fmt.Sprintf("%s.com", defaultOptions.AppName)
 	}
 }

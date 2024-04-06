@@ -12,36 +12,36 @@ import (
 )
 
 type DeploymentOptions struct {
-	ApplicationName string
-	Namespace       string
-	Replicas        int32
-	Image           string
-	Port            int32
+	Name      string
+	Namespace string
+	Replicas  int32
+	Image     string
+	Port      int32
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      opts.ApplicationName,
+			Name:      opts.Name,
 			Namespace: opts.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &opts.Replicas,
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": opts.ApplicationName,
+					"name": opts.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": opts.ApplicationName,
+						"name": opts.Name,
 					},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Name:            opts.ApplicationName,
+							Name:            opts.Name,
 							Image:           opts.Image,
 							ImagePullPolicy: corev1.PullAlways,
 							Ports: []corev1.ContainerPort{
@@ -51,7 +51,7 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Conte
 							},
 						},
 					},
-					ServiceAccountName: opts.ApplicationName,
+					ServiceAccountName: opts.Name,
 				},
 			},
 		},

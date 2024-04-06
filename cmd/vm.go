@@ -25,7 +25,6 @@ type SSHOptions struct {
 
 type AnsibleOptions struct {
 	Hosts                    string
-	Inventory                string
 	Role                     string
 	AnsibleUser              string
 	AnsiblePort              int

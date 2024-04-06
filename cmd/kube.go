@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/guobinqiu/deployer/docker"
-	"github.com/guobinqiu/deployer/git"
 	"github.com/guobinqiu/deployer/helpers"
 	"github.com/guobinqiu/deployer/kube"
 	"github.com/spf13/cobra"
@@ -65,15 +64,7 @@ var kubeCmd = &cobra.Command{
 		setDockerOptions()
 		setKubeOptions()
 
-		// Pull or clone into appdir
-		if gitOptions.Pull {
-			if helpers.IsBlank(gitOptions.Repo) {
-				panic("git.repo is required")
-			}
-			if err := git.Pull(gitOptions); err != nil {
-				panic(err)
-			}
-		}
+		gitPull()
 
 		// Create a docker service
 		dockerservice, err := docker.NewDockerService()

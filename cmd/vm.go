@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"bytes"
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,7 +9,6 @@ import (
 	"text/template"
 
 	"github.com/guobinqiu/deployer/ansible"
-	"github.com/guobinqiu/deployer/git"
 	"github.com/guobinqiu/deployer/helpers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -43,8 +42,9 @@ func init() {
 	viper.SetDefault("ssh.homedir", os.Getenv("HOME"))
 	viper.SetDefault("ssh.client_keyfilename", "deployer")
 	viper.SetDefault("ssh.server_authorized_keys_path", "~/.ssh/authorized_keys")
+	viper.SetDefault("ansible.hosts", "localhost")
 	viper.SetDefault("ansible.ansible_port", 22)
-	viper.SetDefault("ansible.ansible_ssh_private_key_file", "~/.ssh/id_rsa")
+	viper.SetDefault("ansible.ansible_ssh_private_key_file", "~/.ssh/deployer")
 
 	//ssh
 	vmCmd.Flags().StringVar(&sshOptions.Username, "ssh.username", viper.GetString("ssh.username"), "ssh.username")
@@ -71,19 +71,11 @@ var vmCmd = &cobra.Command{
 		setSSHOptions()
 		setAnsibleOptions()
 
-		// Pull or clone into appdir
-		if gitOptions.Pull {
-			if helpers.IsBlank(gitOptions.Repo) {
-				panic("git.repo is required")
-			}
-			if err := git.Pull(gitOptions); err != nil {
-				panic(err)
-			}
-		}
+		gitPull()
 
-		// if err := setupAnsible(ansibleOptions, sshOptions); err != nil {
-		// 	panic(err)
-		// }
+		if err := setupAnsible(); err != nil {
+			panic(err)
+		}
 
 		if err := runPlaybook(); err != nil {
 			panic(err)
@@ -104,32 +96,40 @@ func setSSHOptions() {
 func setAnsibleOptions() {
 	ansibleOptions.AnsibleUser = sshOptions.Username
 
-	//check hosts
-	if helpers.IsBlank(ansibleOptions.Hosts) {
-		panic("ansible.hosts is required")
-	}
-	//...
-
-	//check role in ["go", "java", "nodejs"]
 	if helpers.IsBlank(ansibleOptions.Role) {
 		panic("ansible.role is required")
 	}
-	//...
+
+	roles, err := helpers.ListSubDirs("ansible_roles/")
+	if err != nil {
+		panic(err)
+	}
+	if !helpers.Contains(roles, ansibleOptions.Role) {
+		panic(fmt.Sprintf("role should be one of %s", roles))
+	}
 
 	if helpers.IsBlank(ansibleOptions.AnsibleBecomePassword) {
 		panic("ansible.ansible_become_password is required")
 	}
 }
 
-func setupAnsible(ansibleOptions AnsibleOptions, sshOptions SSHOptions) error {
+func setupAnsible() error {
 	hosts := strings.Split(ansibleOptions.Hosts, ",")
 	for _, host := range hosts {
+		host = strings.TrimSpace(host)
 		keyManager := ansible.NewSSHKeyManager(
 			ansible.WithHomeDir(sshOptions.HomeDir),
 			ansible.WithKeyFileName(sshOptions.ClientKeyFileName),
 		)
-		if err := keyManager.GenerateAndSaveKeyPair(); err != nil {
-			return fmt.Errorf("failed to generate and save SSH key pair: %v", err)
+		keyfile := helpers.ExpandUser(ansibleOptions.AnsibleSSHPrivateKeyFile)
+		keyfileExist, err := helpers.IsFileExist(keyfile)
+		if err != nil {
+			return fmt.Errorf("failed to check the existence of the SSH key file (%s): %v", keyfile, err)
+		}
+		if !keyfileExist {
+			if err := keyManager.GenerateAndSaveKeyPair(); err != nil {
+				return fmt.Errorf("failed to generate and save SSH key pair: %v", err)
+			}
 		}
 		if err := keyManager.AddPublicKeyToRemote(host, ansibleOptions.AnsiblePort, sshOptions.Username, sshOptions.Password, sshOptions.ServerAuthorizedKeysPath); err != nil {
 			return fmt.Errorf("failed to add public key to remote host %s: %v", host, err)
@@ -139,13 +139,13 @@ func setupAnsible(ansibleOptions AnsibleOptions, sshOptions SSHOptions) error {
 }
 
 const inventoryTemplate = `
-[{{ .GroupName }}]
+[{{ .HostGroup }}]
 {{ .Hosts }}
 `
 
 const playbookTemplate = `
 ---
-- hosts: {{ .GroupName }}
+- hosts: {{ .HostGroup }}
   gather_facts: yes
   become: yes
   vars:
@@ -155,73 +155,80 @@ const playbookTemplate = `
 `
 
 type InventoryData struct {
-	GroupName string
+	HostGroup string
 	Hosts     string
 }
 
 type PlaybookData struct {
-	GroupName string
+	HostGroup string
 	AppDir    string
 	Role      string
 }
 
 func runPlaybook() error {
-	tmpl, err := template.New("inventory").Parse(inventoryTemplate)
-	if err != nil {
-		return fmt.Errorf("failed to parse inventory template: %v", err)
-	}
-	var inventory bytes.Buffer
-	if err := tmpl.Execute(&inventory, InventoryData{
-		GroupName: defaultOptions.ApplicationName,
+	inventoryFile, err := executeTemplate(inventoryTemplate, InventoryData{
+		HostGroup: defaultOptions.ApplicationName,
 		Hosts:     ansibleOptions.Hosts,
-	}); err != nil {
-		return fmt.Errorf("failed to execute inventory template: %v", err)
-	}
-	inventoryTempFile, err := os.CreateTemp("/tmp", "inventory-*.yaml")
+	}, "inventory-*.yaml")
 	if err != nil {
-		return fmt.Errorf("failed to create inventory temporary file: %v", err)
+		return err
 	}
-	defer os.Remove(inventoryTempFile.Name())
-	if _, err := inventoryTempFile.Write(inventory.Bytes()); err != nil {
-		return fmt.Errorf("failed to write to inventory temporary file: %v", err)
-	}
-	inventoryTempFile.Close()
 
-	tmpl, err = template.New("playbook").Parse(playbookTemplate)
-	if err != nil {
-		return fmt.Errorf("failed to parse playbook template: %v", err)
-	}
-	var playbook bytes.Buffer
-	if err := tmpl.Execute(&playbook, PlaybookData{
-		GroupName: defaultOptions.ApplicationName,
+	playbookFile, err := executeTemplate(playbookTemplate, PlaybookData{
+		HostGroup: defaultOptions.ApplicationName,
 		AppDir:    defaultOptions.AppDir,
 		Role:      ansibleOptions.Role,
-	}); err != nil {
-		return fmt.Errorf("failed to execute playbook template: %v", err)
-	}
-	playbookTempFile, err := os.CreateTemp("/tmp", "playbook-*.yaml")
+	}, "playbook-*.yaml")
 	if err != nil {
-		return fmt.Errorf("failed to create playbook temporary file: %v", err)
+		return err
 	}
-	defer os.Remove(playbookTempFile.Name())
-	if _, err := playbookTempFile.Write(playbook.Bytes()); err != nil {
-		return fmt.Errorf("failed to write to playbook temporary file: %v", err)
-	}
-	playbookTempFile.Close()
 
-	cmd := "ansible-playbook"
-	args := []string{
-		"-i", inventoryTempFile.Name(),
+	cmdArgs := []string{
+		"-i", inventoryFile.Name(),
 		"-u", ansibleOptions.AnsibleUser,
 		"-e", fmt.Sprintf("ansible_port=%d", ansibleOptions.AnsiblePort),
 		"-e", fmt.Sprintf("ansible_ssh_private_key_file=%s", ansibleOptions.AnsibleSSHPrivateKeyFile),
 		"-e", fmt.Sprintf("ansible_become_password=%s", ansibleOptions.AnsibleBecomePassword),
-		playbookTempFile.Name(),
+		playbookFile.Name(),
 	}
-	fmt.Println(args)
 
-	command := exec.Command(cmd, args...)
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
-	return command.Run()
+	cmd := exec.Command("ansible-playbook", cmdArgs...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to execute playbook: %v", err)
+	}
+
+	defer func() {
+		inventoryFile.Close()
+		os.Remove(inventoryFile.Name())
+
+		playbookFile.Close()
+		os.Remove(playbookFile.Name())
+	}()
+
+	return nil
+}
+
+func executeTemplate(templateStr string, data interface{}, filenamePattern string) (*os.File, error) {
+	tmpl, err := template.New(filenamePattern[:strings.Index(filenamePattern, "*")]).Parse(templateStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse template: %v", err)
+	}
+
+	tmpFile, err := os.CreateTemp("/tmp", filenamePattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temporary file: %v", err)
+	}
+
+	writer := bufio.NewWriter(tmpFile)
+	if err := tmpl.Execute(writer, data); err != nil {
+		return nil, fmt.Errorf("failed to execute template: %v", err)
+	}
+	if err := writer.Flush(); err != nil {
+		return nil, fmt.Errorf("failed to flush buffer to temporary file: %v", err)
+	}
+
+	return tmpFile, nil
 }

@@ -25,7 +25,7 @@ func NewDefaultSSHKeyManager() *SSHKeyManager {
 	u, _ := user.Current()
 	return &SSHKeyManager{
 		HomeDir:     u.HomeDir,
-		KeyFileName: "id_rsa_deployer",
+		KeyFileName: "deployer",
 		KeyBitSize:  2048,
 	}
 }
@@ -101,7 +101,7 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 	}
 	defer session.Close()
 
-	cmd := fmt.Sprintf("echo '%s' >> %s", pubKeyStr, remoteAuthorizedKeysPath)
+	cmd := fmt.Sprintf("grep -qxF '%s' %s || echo '%s' >> %s", pubKeyStr, remoteAuthorizedKeysPath, pubKeyStr, remoteAuthorizedKeysPath)
 	if err := session.Run(cmd); err != nil {
 		return fmt.Errorf("failed to add the public key to the remote authorized_keys file: %w", err)
 	}

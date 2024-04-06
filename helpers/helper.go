@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,4 +52,28 @@ func ExpandUser(path string) string {
 		return filepath.Join(homeDir, path[1:])
 	}
 	return path
+}
+
+func ListSubDirs(path string) ([]string, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read directory: %w", err)
+	}
+
+	var subDirs []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			subDirs = append(subDirs, entry.Name())
+		}
+	}
+	return subDirs, nil
+}
+
+func Contains(arr []string, s string) bool {
+	for _, a := range arr {
+		if a == s {
+			return true
+		}
+	}
+	return false
 }

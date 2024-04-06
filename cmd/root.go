@@ -70,3 +70,15 @@ func setDefaultOptions() {
 		defaultOptions.ApplicationName = applicationName
 	}
 }
+
+// Pull or clone into appdir
+func gitPull() {
+	if gitOptions.Pull {
+		if helpers.IsBlank(gitOptions.Repo) {
+			panic("git.repo is required")
+		}
+		if err := git.Pull(gitOptions); err != nil {
+			panic(err)
+		}
+	}
+}

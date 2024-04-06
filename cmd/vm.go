@@ -138,45 +138,46 @@ func setupAnsible() error {
 }
 
 const inventoryTemplate = `
-[{{ .HostGroup }}]
+[{{ .ApplicationName }}]
 {{ .Hosts }}
 `
 
 const playbookTemplate = `
 ---
-- hosts: {{ .HostGroup }}
+- hosts: {{ .ApplicationName }}
   gather_facts: yes
   become: yes
   vars:
-    appdir: {{ .AppDir }}
+    app_dir: {{ .AppDir }}
+    app_name: {{ .ApplicationName }}
   roles:
     - role: {{ .Role }}
 `
 
 type InventoryData struct {
-	HostGroup string
-	Hosts     string
+	ApplicationName string
+	Hosts           string
 }
 
 type PlaybookData struct {
-	HostGroup string
-	AppDir    string
-	Role      string
+	ApplicationName string
+	AppDir          string
+	Role            string
 }
 
 func runPlaybook() error {
 	inventoryFile, err := executeTemplate(inventoryTemplate, InventoryData{
-		HostGroup: defaultOptions.ApplicationName,
-		Hosts:     ansibleOptions.Hosts,
+		ApplicationName: defaultOptions.ApplicationName,
+		Hosts:           ansibleOptions.Hosts,
 	}, "inventory-*.yaml")
 	if err != nil {
 		return err
 	}
 
 	playbookFile, err := executeTemplate(playbookTemplate, PlaybookData{
-		HostGroup: defaultOptions.ApplicationName,
-		AppDir:    defaultOptions.AppDir,
-		Role:      ansibleOptions.Role,
+		ApplicationName: defaultOptions.ApplicationName,
+		AppDir:          defaultOptions.AppDir,
+		Role:            ansibleOptions.Role,
 	}, "playbook-*.yaml")
 	if err != nil {
 		return err

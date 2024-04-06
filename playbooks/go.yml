@@ -1,8 +1,0 @@
----
-- hosts: go
-  gather_facts: yes
-  become: yes
-  var:
-    
-  roles:
-    - role: go

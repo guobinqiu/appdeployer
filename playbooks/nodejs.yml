@@ -1,6 +1,0 @@
----
-- hosts: nodejs
-  gather_facts: yes
-  become: no
-  roles:
-    - role: nodejs

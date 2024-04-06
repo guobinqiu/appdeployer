@@ -6,14 +6,13 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"text/template"
 
 	"github.com/guobinqiu/deployer/ansible"
 	"github.com/guobinqiu/deployer/git"
 	"github.com/guobinqiu/deployer/helpers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-
-	"text/template"
 )
 
 type SSHOptions struct {
@@ -82,9 +81,9 @@ var vmCmd = &cobra.Command{
 			}
 		}
 
-		if err := setupAnsible(ansibleOptions, sshOptions); err != nil {
-			panic(err)
-		}
+		// if err := setupAnsible(ansibleOptions, sshOptions); err != nil {
+		// 	panic(err)
+		// }
 
 		if err := runPlaybook(); err != nil {
 			panic(err)
@@ -139,9 +138,14 @@ func setupAnsible(ansibleOptions AnsibleOptions, sshOptions SSHOptions) error {
 	return nil
 }
 
+const inventoryTemplate = `
+[{{ .GroupName }}]
+{{ .Hosts }}
+`
+
 const playbookTemplate = `
 ---
-- hosts: {{ .Hosts }}
+- hosts: {{ .GroupName }}
   gather_facts: yes
   become: yes
   vars:
@@ -150,52 +154,74 @@ const playbookTemplate = `
     - role: {{ .Role }}
 `
 
+type InventoryData struct {
+	GroupName string
+	Hosts     string
+}
+
 type PlaybookData struct {
-	Hosts  string
-	AppDir string
-	Role   string
+	GroupName string
+	AppDir    string
+	Role      string
 }
 
 func runPlaybook() error {
-	tmpl, err := template.New("playbook").Parse(playbookTemplate)
+	tmpl, err := template.New("inventory").Parse(inventoryTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to parse inventory template: %v", err)
+	}
+	var inventory bytes.Buffer
+	if err := tmpl.Execute(&inventory, InventoryData{
+		GroupName: defaultOptions.ApplicationName,
+		Hosts:     ansibleOptions.Hosts,
+	}); err != nil {
+		return fmt.Errorf("failed to execute inventory template: %v", err)
+	}
+	inventoryTempFile, err := os.CreateTemp("/tmp", "inventory-*.yaml")
+	if err != nil {
+		return fmt.Errorf("failed to create inventory temporary file: %v", err)
+	}
+	defer os.Remove(inventoryTempFile.Name())
+	if _, err := inventoryTempFile.Write(inventory.Bytes()); err != nil {
+		return fmt.Errorf("failed to write to inventory temporary file: %v", err)
+	}
+	inventoryTempFile.Close()
+
+	tmpl, err = template.New("playbook").Parse(playbookTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to parse playbook template: %v", err)
 	}
-
 	var playbook bytes.Buffer
-
 	if err := tmpl.Execute(&playbook, PlaybookData{
-		Hosts:  ansibleOptions.Hosts,
-		AppDir: defaultOptions.AppDir,
-		Role:   ansibleOptions.Role,
+		GroupName: defaultOptions.ApplicationName,
+		AppDir:    defaultOptions.AppDir,
+		Role:      ansibleOptions.Role,
 	}); err != nil {
 		return fmt.Errorf("failed to execute playbook template: %v", err)
 	}
-
-	tempFile, err := os.CreateTemp("/tmp", "playbook-*.yaml")
+	playbookTempFile, err := os.CreateTemp("/tmp", "playbook-*.yaml")
 	if err != nil {
-		return fmt.Errorf("failed to create temporary file: %v", err)
+		return fmt.Errorf("failed to create playbook temporary file: %v", err)
 	}
-	defer os.Remove(tempFile.Name())
-
-	if _, err := tempFile.Write(playbook.Bytes()); err != nil {
-		return fmt.Errorf("failed to write to temporary file: %v", err)
+	defer os.Remove(playbookTempFile.Name())
+	if _, err := playbookTempFile.Write(playbook.Bytes()); err != nil {
+		return fmt.Errorf("failed to write to playbook temporary file: %v", err)
 	}
-	tempFile.Close()
+	playbookTempFile.Close()
 
 	cmd := "ansible-playbook"
 	args := []string{
+		"-i", inventoryTempFile.Name(),
 		"-u", ansibleOptions.AnsibleUser,
+		"-e", fmt.Sprintf("ansible_port=%d", ansibleOptions.AnsiblePort),
 		"-e", fmt.Sprintf("ansible_ssh_private_key_file=%s", ansibleOptions.AnsibleSSHPrivateKeyFile),
 		"-e", fmt.Sprintf("ansible_become_password=%s", ansibleOptions.AnsibleBecomePassword),
-		tempFile.Name(),
+		playbookTempFile.Name(),
 	}
+	fmt.Println(args)
 
-	output, err := exec.Command(cmd, args...).Output()
-	if err != nil {
-		return fmt.Errorf("failed to execute playbook: %v", err)
-	}
-
-	fmt.Println(string(output))
-	return nil
+	command := exec.Command(cmd, args...)
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	return command.Run()
 }

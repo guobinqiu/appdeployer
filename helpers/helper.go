@@ -12,16 +12,14 @@ func IsBlank(s string) bool {
 }
 
 func GetDefaultKubeConfig() string {
-	if os.Getenv("KUBECONFIG") != "" {
+	if !IsBlank(os.Getenv("KUBECONFIG")) {
 		return os.Getenv("KUBECONFIG")
 	}
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".kube", "config")
+	return filepath.Join(os.Getenv("HOME"), ".kube", "config")
 }
 
 func GetDefaultDockerConfig() string {
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".docker", "config.json")
+	return filepath.Join(os.Getenv("HOME"), ".docker", "config.json")
 }
 
 func IsFileExist(path string) (bool, error) {

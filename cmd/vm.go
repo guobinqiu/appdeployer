@@ -30,6 +30,7 @@ type AnsibleOptions struct {
 	AnsiblePort              int
 	AnsibleSSHPrivateKeyFile string
 	AnsibleBecomePassword    string
+	InstallDir               string
 }
 
 var sshOptions SSHOptions
@@ -44,6 +45,7 @@ func init() {
 	viper.SetDefault("ansible.hosts", "localhost")
 	viper.SetDefault("ansible.ansible_port", 22)
 	viper.SetDefault("ansible.ansible_ssh_private_key_file", "~/.ssh/deployer")
+	viper.SetDefault("ansible.installdir", "~/workspace")
 
 	//ssh
 	vmCmd.Flags().StringVar(&sshOptions.Username, "ssh.username", viper.GetString("ssh.username"), "ssh.username")
@@ -59,6 +61,7 @@ func init() {
 	vmCmd.Flags().IntVar(&ansibleOptions.AnsiblePort, "ansible.ansible_port", viper.GetInt("ansible.ansible_port"), "ansible.ansible_port")
 	vmCmd.Flags().StringVar(&ansibleOptions.AnsibleSSHPrivateKeyFile, "ansible.ansible_ssh_private_key_file", viper.GetString("ansible.ansible_ssh_private_key_file"), "ansible.ansible_ssh_private_key_file")
 	vmCmd.Flags().StringVar(&ansibleOptions.AnsibleBecomePassword, "ansible.ansible_become_password", viper.GetString("ansible.ansible_become_password"), "ansible.ansible_become_password")
+	vmCmd.Flags().StringVar(&ansibleOptions.InstallDir, "ansible.installdir", viper.GetString("ansible.installdir"), "ansible.installdir")
 }
 
 // go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=java
@@ -146,10 +149,11 @@ const playbookTemplate = `
 ---
 - hosts: {{ .AppName }}
   gather_facts: yes
-  become: yes
+  become: no
   vars:
+    app_name: {{ .AppName }}
     app_dir: {{ .AppDir }}
-    app_name: {{ .ApplicationName }}
+    app_install_dir: {{ .InstallDir }}
   roles:
     - role: {{ .Role }}
 `
@@ -160,9 +164,10 @@ type InventoryData struct {
 }
 
 type PlaybookData struct {
-	AppName string
-	AppDir  string
-	Role    string
+	AppName    string
+	AppDir     string
+	InstallDir string
+	Role       string
 }
 
 func runPlaybook() error {
@@ -175,9 +180,10 @@ func runPlaybook() error {
 	}
 
 	playbookFile, err := executeTemplate(playbookTemplate, PlaybookData{
-		AppName: defaultOptions.AppName,
-		AppDir:  defaultOptions.AppDir,
-		Role:    ansibleOptions.Role,
+		AppName:    defaultOptions.AppName,
+		AppDir:     defaultOptions.AppDir,
+		InstallDir: ansibleOptions.InstallDir,
+		Role:       ansibleOptions.Role,
 	}, "playbook-*.yaml")
 	if err != nil {
 		return err

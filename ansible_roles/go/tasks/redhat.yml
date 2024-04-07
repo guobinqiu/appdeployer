@@ -2,6 +2,7 @@
 - name: Update package list
   yum:
     update_cache: yes
+  become: yes
 
 - name: Intall Go dependencies
   yum:
@@ -10,16 +11,19 @@
   with_items:
     - gcc
     - make
+  become: yes
 
 - name: Intall bootstrap Go
   yum:
-    name: go
+    name: golang
     state: present
+  become: yes
 
 - name: Download Go Archive
   get_url:
     url: "{{ go_download_url }}"
     dest: /tmp
+  become: yes
 
 - name: Unarchive Go
   unarchive:
@@ -27,17 +31,20 @@
     dest: "/tmp/"
     remote_src: yes
     creates: "/tmp/{{ go_version }}/go"
+  become: yes
 
 - name: Compile Go
   command: "./make.bash"
   args:
     chdir: "/tmp/{{ go_version }}/go/src"
+  become: yes
 
-- name: Copy to target dir
+- name: Copy to install dir
   copy:
     src: "/tmp/{{ go_version }}/go"
     dest: "{{ go_install_dir }}"
     remote_src: yes
+  become: yes
 
 - name: Update PATH environment variable
   lineinfile:
@@ -45,8 +52,35 @@
     state: present
     create: yes
     line: "export PATH={{ go_install_dir }}/go/bin:$PATH"
+  become: yes
 
 - name: Reload PATH environment variable
   shell: source /etc/profile.d/go.sh
   args:
     executable: /bin/bash
+  become: yes
+
+- name: Rsync to install dir
+  synchronize:
+    src: "{{ app_dir }}"
+    dest: "{{ ansible_host }}:{{ app_install_dir }}"
+
+- name: Download Go dependencies
+  command: go mod download
+  args:
+    chdir: "{{ app_install_dir }}/{{ app_name }}"
+  environment:
+    GOPROXY: https://goproxy.cn,direct
+  
+- name: Build App
+  command: go build main.go
+  args:
+    chdir:  "{{ app_install_dir }}/{{ app_name }}"
+
+- name: Stop App
+  shell: kill $(cat /tmp/{{ app_name }}.pid) 2 > /dev/null || true
+
+- name: Start App
+  shell: "nohup ./main & echo $! > /tmp/{{ app_name }}.pid"
+  args:
+    chdir:  "{{ app_install_dir }}/{{ app_name }}"

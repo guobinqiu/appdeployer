@@ -2,16 +2,19 @@
 - name: Update package list
   apt:
     update_cache: yes
+  become: yes  
 
 - name: Install JDK 11
   apt:
     name: default-jdk
     state: present
+  become: yes  
 
 - name: Install Maven
   apt:
     name: maven
     state: present
+  become: yes
 
 - name: Create a non-interactive system user for Tomcat9
   user:
@@ -21,12 +24,14 @@
     shell: /sbin/nologin
     system: yes
     state: present
+  become: yes
 
 - name: Download Tomcat9 Archive
   get_url:
     url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.87/bin/apache-tomcat-9.0.87.tar.gz
     dest: /tmp/apache-tomcat-9.0.87.tar.gz
     mode: 0644
+  become: yes  
 
 - name: Unarchive Tomcat9
   unarchive:
@@ -37,16 +42,20 @@
     owner: tomcat
     group: tomcat
     creates: /opt/tomcat/bin/catalina.sh
+  become: yes
 
 - name: Copy war file to remote Tomcat webapps directory
   copy:
     src: "{{ app_dir }}/target/{{ app_name }}.war"
     dest: "/opt/tomcat/webapps/"
+  become: yes    
 
 - name: Stop Tomcat9
   command: /opt/tomcat/bin/catalina.sh stop
+  become: yes
 
 - name: Start Tomcat9
   shell: USE_NOHUP=true /opt/tomcat/bin/catalina.sh start
   args:
     executable: /bin/bash
+  become: yes

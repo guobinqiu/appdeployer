@@ -77,10 +77,26 @@
   args:
     chdir:  "{{ app_install_dir }}/{{ app_name }}"
 
+- name: Check PID file exists
+  stat:
+    path: "/tmp/{{ app_name }}.pid"
+  register: pid_file_status
+
 - name: Stop App
-  shell: kill $(cat /tmp/{{ app_name }}.pid) 2 > /dev/null || true
+  shell: |
+    pid=$(cat /tmp/{{ app_name }}.pid)
+    if [[ -n $pid ]]; then
+      if kill -0 $pid > /dev/null 2>&1; then
+        kill $pid
+      fi
+    fi
+    rm -rf /tmp/{{ app_name }}.pid
+  when: pid_file_status.stat.exists
 
 - name: Start App
-  shell: "nohup ./main & echo $! > /tmp/{{ app_name }}.pid"
+  shell: |
+    nohup ./main &
+    echo $! > /tmp/{{ app_name }}.pid
   args:
     chdir:  "{{ app_install_dir }}/{{ app_name }}"
+    creates: /tmp/{{ app_name }}.pid

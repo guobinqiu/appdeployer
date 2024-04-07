@@ -90,7 +90,7 @@
         kill $pid
       fi
     fi
-    rm -rf /tmp/{{ app_name }}.pid
+    rm -f /tmp/{{ app_name }}.pid
   when: pid_file_status.stat.exists
 
 - name: Start App

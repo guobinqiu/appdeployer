@@ -55,7 +55,6 @@ func init() {
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Port, "kube.deployment.port", viper.GetInt32("kube.deployment.port"), "kube.deployment.port")
 }
 
-// go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config
 var kubeCmd = &cobra.Command{
 	Use:   "kube",
 	Short: "Deploy to kubernetes cluster",

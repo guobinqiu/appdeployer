@@ -64,7 +64,6 @@ func init() {
 	vmCmd.Flags().StringVar(&ansibleOptions.InstallDir, "ansible.installdir", viper.GetString("ansible.installdir"), "ansible.installdir")
 }
 
-// go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=java
 var vmCmd = &cobra.Command{
 	Use:   "vm",
 	Short: "Deploy to VM",

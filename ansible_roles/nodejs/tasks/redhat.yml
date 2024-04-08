@@ -16,7 +16,35 @@
     var: install_nvm_result.stdout_lines
 
 - name: Install NodeJS
-  shell: bash -lc 'nvm install v8.16.0'
+  shell: bash -lc "nvm install {{ node_version }}"
 
 - name: Set default NodeJS
-  shell: bash -lc 'nvm alias default v8.16.0'
+  shell: bash -lc "nvm alias default {{ node_version }}"
+
+- name: Rsync to install dir
+  synchronize:
+    src: "{{ app_dir }}"
+    dest: "{{ ansible_host }}:{{ app_install_dir }}"
+    mode: push
+    rsync_opts:
+      - "--exclude=.git"
+      - "--delete-after"
+      - "--verbose"
+
+- name: Install modules
+  command: npm install
+
+- name: Install PM2 globally
+  npm:
+    name: pm2
+    global: yes
+    state: present
+
+- name: Stop PM2
+  command: pm2 stop {{ app_name }}
+  ignore_errors: yes
+
+- name: Start PM2
+  command: pm2 start app.js --name {{ app_name}}
+  args:
+    chdir: "{{ app_install_dir }}/{{ app_name }}"

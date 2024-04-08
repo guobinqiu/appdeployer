@@ -2,13 +2,13 @@
 - name: Update package list
   apt:
     update_cache: yes
-  become: yes  
+  become: yes
 
 - name: Install JDK 11
   apt:
     name: default-jdk
     state: present
-  become: yes  
+  become: yes
 
 - name: Install Maven
   apt:

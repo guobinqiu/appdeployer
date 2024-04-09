@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/guobinqiu/deployer/docker"
-	"github.com/guobinqiu/deployer/helpers"
-	"github.com/guobinqiu/deployer/kube"
+	"github.com/guobinqiu/appdeployer/docker"
+	"github.com/guobinqiu/appdeployer/helpers"
+	"github.com/guobinqiu/appdeployer/kube"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
@@ -57,7 +57,7 @@ func init() {
 
 var kubeCmd = &cobra.Command{
 	Use:   "kube",
-	Short: "Deploy to kubernetes cluster",
+	Short: "Deploy app to kubernetes cluster",
 	Run: func(cmd *cobra.Command, args []string) {
 		setDefaultOptions()
 		setDockerOptions()

@@ -3,8 +3,8 @@ package cmd
 import (
 	"path/filepath"
 
-	"github.com/guobinqiu/deployer/git"
-	"github.com/guobinqiu/deployer/helpers"
+	"github.com/guobinqiu/appdeployer/git"
+	"github.com/guobinqiu/appdeployer/helpers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -24,7 +24,7 @@ func Execute() error {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "deploy",
+	Use:   "appdeploy",
 	Short: "App deployer",
 	Long:  "App deployer is used to deploy your application to any kubernetes clusters as well as VMs via ansible",
 }

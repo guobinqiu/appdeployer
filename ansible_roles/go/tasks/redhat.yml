@@ -64,6 +64,11 @@
   synchronize:
     src: "{{ app_dir }}"
     dest: "{{ ansible_host }}:{{ app_install_dir }}"
+    mode: push
+    rsync_opts:
+      - "--exclude=.git"
+      - "--delete-after"
+      - "--verbose"
 
 - name: Download Go dependencies
   command: go mod download

@@ -1,4 +1,4 @@
-module github.com/guobinqiu/deployer
+module github.com/guobinqiu/appdeployer
 
 go 1.20
 

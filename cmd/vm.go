@@ -8,8 +8,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/guobinqiu/deployer/ansible"
-	"github.com/guobinqiu/deployer/helpers"
+	"github.com/guobinqiu/appdeployer/ansible"
+	"github.com/guobinqiu/appdeployer/helpers"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -40,11 +40,11 @@ func init() {
 	// set default values
 	viper.SetDefault("ssh.port", 22)
 	viper.SetDefault("ssh.homedir", os.Getenv("HOME"))
-	viper.SetDefault("ssh.client_keyfilename", "deployer")
+	viper.SetDefault("ssh.client_keyfilename", "appdeployer")
 	viper.SetDefault("ssh.server_authorized_keys_path", "~/.ssh/authorized_keys")
 	viper.SetDefault("ansible.hosts", "localhost")
 	viper.SetDefault("ansible.ansible_port", 22)
-	viper.SetDefault("ansible.ansible_ssh_private_key_file", "~/.ssh/deployer")
+	viper.SetDefault("ansible.ansible_ssh_private_key_file", "~/.ssh/appdeployer")
 	viper.SetDefault("ansible.installdir", "~/workspace")
 
 	//ssh
@@ -66,7 +66,7 @@ func init() {
 
 var vmCmd = &cobra.Command{
 	Use:   "vm",
-	Short: "Deploy to VM",
+	Short: "Deploy app to VM set",
 	Run: func(cmd *cobra.Command, args []string) {
 		setDefaultOptions()
 		setSSHOptions()

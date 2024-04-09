@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/guobinqiu/deployer/cmd"
+	"github.com/guobinqiu/appdeployer/cmd"
 )
 
 func main() {

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/guobinqiu/deployer/docker"
-	"github.com/guobinqiu/deployer/helpers"
+	"github.com/guobinqiu/appdeployer/docker"
+	"github.com/guobinqiu/appdeployer/helpers"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

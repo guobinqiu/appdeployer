@@ -15,7 +15,7 @@ import (
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
-	"github.com/guobinqiu/deployer/helpers"
+	"github.com/guobinqiu/appdeployer/helpers"
 )
 
 const DOCKERHUB = "https://index.docker.io/v1/"

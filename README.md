@@ -1,4 +1,4 @@
-# 快速发布应用到kubernets集群或者vm集群
+# 快速发布应用到kubernetes集群或者vm集群
 
 建设中...
 

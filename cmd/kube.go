@@ -35,6 +35,8 @@ func init() {
 	viper.SetDefault("kube.service.port", 8000)
 	viper.SetDefault("kube.deployment.replicas", 1)
 	viper.SetDefault("kube.deployment.port", 8000)
+	viper.SetDefault("kube.deployment.maxsurge", "1")
+	viper.SetDefault("kube.deployment.maxunavailable", "0")
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")
@@ -53,6 +55,12 @@ func init() {
 	kubeCmd.Flags().Int32Var(&kubeOptions.serviceOptions.Port, "kube.service.port", viper.GetInt32("kube.service.port"), "kube.service.port")
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Replicas, "kube.deployment.replicas", viper.GetInt32("kube.deployment.replicas"), "kube.deployment.replicas")
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Port, "kube.deployment.port", viper.GetInt32("kube.deployment.port"), "kube.deployment.port")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MaxSurge, "kube.deployment.maxsurge", viper.GetString("kube.deployment.maxsurge"), "kube.deployment.maxsurge")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MaxUnavailable, "kube.deployment.maxunavailable", viper.GetString("kube.deployment.maxunavailable"), "kube.deployment.maxunavailable")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.CPULimit, "kube.deployment.cpulimit", viper.GetString("kube.deployment.cpulimit"), "kube.deployment.cpulimit")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MemLimit, "kube.deployment.memlimit", viper.GetString("kube.deployment.memlimit"), "kube.deployment.memlimit")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.CPURequest, "kube.deployment.cpurequest", viper.GetString("kube.deployment.cpurequest"), "kube.deployment.cpurequest")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MemRequest, "kube.deployment.memrequest", viper.GetString("kube.deployment.memrequest"), "kube.deployment.memrequest")
 }
 
 var kubeCmd = &cobra.Command{

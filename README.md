@@ -19,11 +19,11 @@
 不同的集群环境可以给`--kube.kubeconfig`参数设置不同的kubeconfig文件, 目前镜像用的docker, 可以配置私有镜像
 
 ```
-go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config
+go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=500m --kube.deployment.memlimit=512mi
 
-go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config
+go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=***
 
-go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config
+go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=***
 ```
 
 ## 发布到虚拟机集群
@@ -31,9 +31,9 @@ go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiu
 执行命令会自动安装ansible控制机和受控机, 不同的集群环境可以给`--ansible.hosts`参数设置不同的主机列表,用逗号分隔
 
 ```
-go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=******** --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=go
+go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=go
 
-go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=******** --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=java
+go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=java
 
-go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=******** --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=node
+go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.ansible_become_password=111111 --ansible.hosts=127.0.0.1 --ansible.ansible_port=2222 --ansible.role=node
 ```

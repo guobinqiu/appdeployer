@@ -21,9 +21,9 @@
 ```
 go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=100m --kube.deployment.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
 
-go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=***
+go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=100m --kube.deployment.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
 
-go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=***
+go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=100m --kube.deployment.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
 ```
 
 ## 发布到虚拟机集群

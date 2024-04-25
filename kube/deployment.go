@@ -17,6 +17,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	ProbeTypeHTTPGet   = "httpget"
+	ProbeTypeExec      = "exec"
+	ProbeTypeTCPSocket = "tcpsocket"
+)
+
 // DeploymentOptions 用于配置 Deployment 创建或更新的选项
 type DeploymentOptions struct {
 	Name           string
@@ -30,6 +36,37 @@ type DeploymentOptions struct {
 	CPULimit       string
 	MemRequest     string
 	MemLimit       string
+	EnvVars        []string
+	LivenessProbe  LivenessProbe
+	ReadinessProbe ReadinessProbe
+}
+
+type LivenessProbe struct {
+	Enabled bool
+	Type    string
+	Path    string
+	Port    string
+	Schema  string
+	Command string
+	ProbeParams
+}
+
+type ReadinessProbe struct {
+	Enabled bool
+	Type    string
+	Path    string
+	Port    string
+	Schema  string
+	Command string
+	ProbeParams
+}
+
+type ProbeParams struct {
+	InitialDelaySeconds int32
+	TimeoutSeconds      int32
+	PeriodSeconds       int32
+	SuccessThreshold    int32
+	FailureThreshold    int32
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {
@@ -84,48 +121,20 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Conte
 		},
 	}
 
-	limits := corev1.ResourceList{}
-	if !helpers.IsBlank(opts.CPULimit) {
-		cpuLimit, err := parseCPUSize(strings.ToLower(opts.CPULimit))
-		if err != nil {
-			return err
-		}
-		limits[corev1.ResourceCPU] = *cpuLimit
+	container := deployment.Spec.Template.Spec.Containers[0]
+	if err := setResource(&container, opts); err != nil {
+		return fmt.Errorf("failed to set resource: %v", err)
 	}
-	if !helpers.IsBlank(opts.MemLimit) {
-		memLimit, err := parseMemorySize(strings.ToLower(opts.MemLimit))
-		if err != nil {
-			return err
-		}
-		limits[corev1.ResourceMemory] = *memLimit
+	if err := setLivenessProbe(&container, opts); err != nil {
+		return fmt.Errorf("failed to set liveness probe: %v", err)
 	}
-
-	requests := corev1.ResourceList{}
-	if !helpers.IsBlank(opts.CPURequest) {
-		cpuRequest, err := parseCPUSize(strings.ToLower(opts.CPURequest))
-		if err != nil {
-			return err
-		}
-		requests[corev1.ResourceCPU] = *cpuRequest
+	if err := setReadinessProbe(&container, opts); err != nil {
+		return fmt.Errorf("failed to set readiness probe: %v", err)
 	}
-	if !helpers.IsBlank(opts.MemRequest) {
-		memRequest, err := parseMemorySize(strings.ToLower(opts.MemRequest))
-		if err != nil {
-			return err
-		}
-		requests[corev1.ResourceMemory] = *memRequest
+	if err := setEnv(&container, opts); err != nil {
+		return fmt.Errorf("failed to set env: %v", err)
 	}
-
-	if len(limits) > 0 || len(requests) > 0 {
-		resource := corev1.ResourceRequirements{}
-		if len(limits) > 0 {
-			resource.Limits = limits
-		}
-		if len(requests) > 0 {
-			resource.Requests = requests
-		}
-		deployment.Spec.Template.Spec.Containers[0].Resources = resource
-	}
+	deployment.Spec.Template.Spec.Containers[0] = container
 
 	_, err := clientset.AppsV1().Deployments(opts.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	if err != nil {
@@ -180,15 +189,142 @@ func parseMemorySize(input string) (*resource.Quantity, error) {
 		return nil, fmt.Errorf("failed to parse memory value: %w", err)
 	}
 
+	var bytesValue int64
 	unit := matches[2]
 	switch unit {
 	case "ki":
-		return resource.NewQuantity(value*(1<<10), resource.BinarySI), nil
+		bytesValue = value << 10 //1KiB = 2^10B
 	case "mi":
-		return resource.NewQuantity(value*(1<<20), resource.BinarySI), nil
+		bytesValue = value << 20 //1MiB = 2^20B
 	case "gi":
-		return resource.NewQuantity(value*(1<<30), resource.BinarySI), nil
+		bytesValue = value << 30 //1GiB = 2^30B
 	default:
-		return nil, fmt.Errorf("invalid memory unit '%s'", unit)
+		return nil, fmt.Errorf("unsupported memory unit: '%s'", unit)
 	}
+	return resource.NewQuantity(bytesValue, resource.BinarySI), nil
+}
+
+func setResource(container *corev1.Container, opts DeploymentOptions) error {
+	limits := corev1.ResourceList{}
+	if !helpers.IsBlank(opts.CPULimit) {
+		cpuLimit, err := parseCPUSize(strings.ToLower(opts.CPULimit))
+		if err != nil {
+			return err
+		}
+		limits[corev1.ResourceCPU] = *cpuLimit
+	}
+	if !helpers.IsBlank(opts.MemLimit) {
+		memLimit, err := parseMemorySize(strings.ToLower(opts.MemLimit))
+		if err != nil {
+			return err
+		}
+		limits[corev1.ResourceMemory] = *memLimit
+	}
+
+	requests := corev1.ResourceList{}
+	if !helpers.IsBlank(opts.CPURequest) {
+		cpuRequest, err := parseCPUSize(strings.ToLower(opts.CPURequest))
+		if err != nil {
+			return err
+		}
+		requests[corev1.ResourceCPU] = *cpuRequest
+	}
+	if !helpers.IsBlank(opts.MemRequest) {
+		memRequest, err := parseMemorySize(strings.ToLower(opts.MemRequest))
+		if err != nil {
+			return err
+		}
+		requests[corev1.ResourceMemory] = *memRequest
+	}
+
+	if len(limits) > 0 || len(requests) > 0 {
+		resource := corev1.ResourceRequirements{}
+		if len(limits) > 0 {
+			resource.Limits = limits
+		}
+		if len(requests) > 0 {
+			resource.Requests = requests
+		}
+		container.Resources = resource
+	}
+
+	return nil
+}
+
+func setLivenessProbe(container *corev1.Container, opts DeploymentOptions) error {
+	if !opts.LivenessProbe.Enabled {
+		return nil
+	}
+
+	var probe Probe
+	probeType := strings.ToLower(opts.LivenessProbe.Type)
+	switch probeType {
+	case ProbeTypeHTTPGet:
+		probe = HttpGetProbe{
+			Path:   opts.LivenessProbe.Path,
+			Port:   intstr.FromInt32(opts.Port),
+			Schema: corev1.URIScheme(strings.ToUpper(opts.LivenessProbe.Schema)),
+		}
+	case ProbeTypeExec:
+		probe = ExecProbe{
+			Command: opts.LivenessProbe.Command,
+		}
+	case ProbeTypeTCPSocket:
+		probe = TCPSocketProbe{
+			Port: intstr.FromInt32(opts.Port),
+		}
+	default:
+		return fmt.Errorf("unsupported liveness probe type: '%s'", probeType)
+	}
+
+	container.LivenessProbe = probe.GetProbe()
+	return nil
+}
+
+func setReadinessProbe(container *corev1.Container, opts DeploymentOptions) error {
+	if !opts.ReadinessProbe.Enabled {
+		return nil
+	}
+
+	var probe Probe
+	probeType := strings.ToLower(opts.ReadinessProbe.Type)
+	switch probeType {
+	case ProbeTypeHTTPGet:
+		probe = HttpGetProbe{
+			Path:   opts.ReadinessProbe.Path,
+			Port:   intstr.FromInt32(opts.Port),
+			Schema: corev1.URIScheme(strings.ToUpper(opts.ReadinessProbe.Schema)),
+		}
+	case ProbeTypeExec:
+		probe = ExecProbe{
+			Command: opts.ReadinessProbe.Command,
+		}
+	case ProbeTypeTCPSocket:
+		probe = TCPSocketProbe{
+			Port: intstr.FromInt32(opts.Port),
+		}
+	default:
+		return fmt.Errorf("unsupported readiness probe type: '%s'", probeType)
+	}
+
+	container.ReadinessProbe = probe.GetProbe()
+	return nil
+}
+
+func setEnv(container *corev1.Container, opts DeploymentOptions) error {
+	var envs []corev1.EnvVar
+	for _, envVar := range opts.EnvVars {
+		parts := strings.Split(envVar, "=")
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid format for environment variable: '%s'", envVar)
+		}
+		envs = append(envs, corev1.EnvVar{
+			Name:  parts[0],
+			Value: parts[1],
+		})
+	}
+	if len(envs) > 0 {
+		container.Env = envs
+	}
+	return nil
 }

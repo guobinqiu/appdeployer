@@ -37,6 +37,27 @@ func init() {
 	viper.SetDefault("kube.deployment.port", 8000)
 	viper.SetDefault("kube.deployment.maxsurge", "1")
 	viper.SetDefault("kube.deployment.maxunavailable", "0")
+	viper.SetDefault("kube.deployment.timezone", "Asia/Shanghai")
+
+	viper.SetDefault("kube.deployment.livenessprobe.enabled", false)
+	viper.SetDefault("kube.deployment.livenessprobe.type", kube.ProbeTypeHTTPGet)
+	viper.SetDefault("kube.deployment.livenessprobe.path", "/")
+	viper.SetDefault("kube.deployment.livenessprobe.schema", "http")
+	viper.SetDefault("kube.deployment.livenessprobe.initialdelayseconds", 0)
+	viper.SetDefault("kube.deployment.livenessprobe.timeoutseconds", 1)
+	viper.SetDefault("kube.deployment.livenessprobe.periodseconds", 10)
+	viper.SetDefault("kube.deployment.livenessprobe.successthreshold", 1)
+	viper.SetDefault("kube.deployment.livenessprobe.failurethreshold", 3)
+
+	viper.SetDefault("kube.deployment.readinessprobe.enabled", false)
+	viper.SetDefault("kube.deployment.readinessprobe.type", kube.ProbeTypeHTTPGet)
+	viper.SetDefault("kube.deployment.readinessprobe.path", "/")
+	viper.SetDefault("kube.deployment.readinessprobe.schema", "http")
+	viper.SetDefault("kube.deployment.readinessprobe.initialdelayseconds", 0)
+	viper.SetDefault("kube.deployment.readinessprobe.timeoutseconds", 1)
+	viper.SetDefault("kube.deployment.readinessprobe.periodseconds", 10)
+	viper.SetDefault("kube.deployment.readinessprobe.successthreshold", 1)
+	viper.SetDefault("kube.deployment.readinessprobe.failurethreshold", 3)
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")
@@ -61,6 +82,30 @@ func init() {
 	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MemLimit, "kube.deployment.memlimit", viper.GetString("kube.deployment.memlimit"), "kube.deployment.memlimit")
 	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.CPURequest, "kube.deployment.cpurequest", viper.GetString("kube.deployment.cpurequest"), "kube.deployment.cpurequest")
 	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MemRequest, "kube.deployment.memrequest", viper.GetString("kube.deployment.memrequest"), "kube.deployment.memrequest")
+
+	kubeCmd.Flags().StringSliceVarP(&kubeOptions.deploymentOptions.EnvVars, "env", "e", nil, "Set environment variables in the form of key=value")
+
+	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.LivenessProbe.Enabled, "kube.deployment.livenessprobe.enabled", viper.GetBool("kube.deployment.livenessprobe.enabled"), "kube.deployment.livenessprobe.enabled")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Type, "kube.deployment.livenessprobe.type", viper.GetString("kube.deployment.livenessprobe.type"), "kube.deployment.livenessprobe.type")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Path, "kube.deployment.livenessprobe.path", viper.GetString("kube.deployment.livenessprobe.path"), "kube.deployment.livenessprobe.path")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Schema, "kube.deployment.livenessprobe.schema", viper.GetString("kube.deployment.livenessprobe.schema"), "kube.deployment.livenessprobe.schema")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Command, "kube.deployment.livenessprobe.command", viper.GetString("kube.deployment.livenessprobe.command"), "kube.deployment.livenessprobe.command")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.InitialDelaySeconds, "kube.deployment.livenessprobe.initialdelayseconds", viper.GetInt32("kube.deployment.livenessprobe.initialdelayseconds"), "kube.deployment.livenessprobe.initialdelayseconds")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.TimeoutSeconds, "kube.deployment.livenessprobe.timeoutseconds", viper.GetInt32("kube.deployment.livenessprobe.timeoutseconds"), "kube.deployment.livenessprobe.timeoutseconds")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.PeriodSeconds, "kube.deployment.livenessprobe.periodseconds", viper.GetInt32("kube.deployment.livenessprobe.periodseconds"), "kube.deployment.livenessprobe.periodseconds")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.SuccessThreshold, "kube.deployment.livenessprobe.successthreshold", viper.GetInt32("kube.deployment.livenessprobe.successthreshold"), "kube.deployment.livenessprobe.successthreshold")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.FailureThreshold, "kube.deployment.livenessprobe.failurethreshold", viper.GetInt32("kube.deployment.livenessprobe.failurethreshold"), "kube.deployment.livenessprobe.failurethreshold")
+
+	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.ReadinessProbe.Enabled, "kube.deployment.readinessprobe.enabled", viper.GetBool("kube.deployment.readinessprobe.enabled"), "kube.deployment.readinessprobe.enabled")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Type, "kube.deployment.readinessprobe.type", viper.GetString("kube.deployment.readinessprobe.type"), "kube.deployment.readinessprobe.type")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Path, "kube.deployment.readinessprobe.path", viper.GetString("kube.deployment.readinessprobe.path"), "kube.deployment.readinessprobe.path")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Schema, "kube.deployment.readinessprobe.schema", viper.GetString("kube.deployment.readinessprobe.schema"), "kube.deployment.readinessprobe.schema")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Command, "kube.deployment.readinessprobe.command", viper.GetString("kube.deployment.readinessprobe.command"), "kube.deployment.readinessprobe.command")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.InitialDelaySeconds, "kube.deployment.readinessprobe.initialdelayseconds", viper.GetInt32("kube.deployment.readinessprobe.initialdelayseconds"), "kube.deployment.readinessprobe.initialdelayseconds")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.TimeoutSeconds, "kube.deployment.readinessprobe.timeoutseconds", viper.GetInt32("kube.deployment.readinessprobe.timeoutseconds"), "kube.deployment.readinessprobe.timeoutseconds")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.PeriodSeconds, "kube.deployment.readinessprobe.periodseconds", viper.GetInt32("kube.deployment.readinessprobe.periodseconds"), "kube.deployment.readinessprobe.periodseconds")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.SuccessThreshold, "kube.deployment.readinessprobe.successthreshold", viper.GetInt32("kube.deployment.readinessprobe.successthreshold"), "kube.deployment.readinessprobe.successthreshold")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.FailureThreshold, "kube.deployment.readinessprobe.failurethreshold", viper.GetInt32("kube.deployment.readinessprobe.failurethreshold"), "kube.deployment.readinessprobe.failurethreshold")
 }
 
 var kubeCmd = &cobra.Command{

@@ -19,7 +19,7 @@
 不同的集群环境可以给`--kube.kubeconfig`参数设置不同的kubeconfig文件, 目前镜像用的docker, 可以配置私有镜像
 
 ```
-go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=500m --kube.deployment.memlimit=512mi
+go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=100m --kube.deployment.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
 
 go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=***
 

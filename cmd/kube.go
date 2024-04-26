@@ -19,6 +19,7 @@ type KubeOptions struct {
 	ingressOptions    kube.IngressOptions
 	serviceOptions    kube.ServiceOptions
 	deploymentOptions kube.DeploymentOptions
+	hpaOptions        kube.HPAOptions
 }
 
 var dockerOptions docker.DockerOptions
@@ -58,6 +59,11 @@ func init() {
 	viper.SetDefault("kube.deployment.readinessprobe.periodseconds", 10)
 	viper.SetDefault("kube.deployment.readinessprobe.successthreshold", 1)
 	viper.SetDefault("kube.deployment.readinessprobe.failurethreshold", 3)
+
+	viper.SetDefault("kube.hpa.enabled", false)
+	viper.SetDefault("kube.hpa.minreplicas", 1)
+	viper.SetDefault("kube.hpa.maxreplicas", 10)
+	viper.SetDefault("kube.hpa.cpupercent", 50)
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")
@@ -106,6 +112,11 @@ func init() {
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.PeriodSeconds, "kube.deployment.readinessprobe.periodseconds", viper.GetInt32("kube.deployment.readinessprobe.periodseconds"), "kube.deployment.readinessprobe.periodseconds")
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.SuccessThreshold, "kube.deployment.readinessprobe.successthreshold", viper.GetInt32("kube.deployment.readinessprobe.successthreshold"), "kube.deployment.readinessprobe.successthreshold")
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.FailureThreshold, "kube.deployment.readinessprobe.failurethreshold", viper.GetInt32("kube.deployment.readinessprobe.failurethreshold"), "kube.deployment.readinessprobe.failurethreshold")
+
+	kubeCmd.Flags().BoolVar(&kubeOptions.hpaOptions.Enabled, "kube.hpa.enabled", viper.GetBool("kube.hpa.enabled"), "kube.hpa.enabled")
+	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MinReplicas, "kube.hpa.minreplicas", viper.GetInt32("kube.hpa.minreplicas"), "kube.hpa.minreplicas")
+	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MaxReplicas, "kube.hpa.maxreplicas", viper.GetInt32("kube.hpa.maxreplicas"), "kube.hpa.maxreplicas")
+	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.CPUPercentage, "kube.hpa.cpupercentage", viper.GetInt32("kube.hpa.cpupercentage"), "kube.hpa.cpupercentage")
 }
 
 var kubeCmd = &cobra.Command{
@@ -188,6 +199,20 @@ var kubeCmd = &cobra.Command{
 		kubeOptions.ingressOptions.Namespace = kubeOptions.Namespace
 		if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.ingressOptions); err != nil {
 			panic(err)
+		}
+
+		if kubeOptions.hpaOptions.Enabled {
+			kubeOptions.hpaOptions.Name = defaultOptions.AppName
+			kubeOptions.hpaOptions.Namespace = kubeOptions.Namespace
+			if err := kube.CreateOrUpdateHPA(clientset, ctx, kubeOptions.hpaOptions); err != nil {
+				panic(err)
+			}
+		} else {
+			kubeOptions.hpaOptions.Name = defaultOptions.AppName
+			kubeOptions.hpaOptions.Namespace = kubeOptions.Namespace
+			if err := kube.DeleteHPA(clientset, ctx, kubeOptions.hpaOptions); err != nil {
+				panic(err)
+			}
 		}
 	},
 }

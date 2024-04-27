@@ -11,12 +11,12 @@ import (
 )
 
 type HPAOptions struct {
-	Name          string
-	Namespace     string
-	Enabled       bool
-	MinReplicas   int32
-	MaxReplicas   int32
-	CPUPercentage int32
+	Name        string
+	Namespace   string
+	Enabled     bool
+	MinReplicas int32
+	MaxReplicas int32
+	CPURate     int32
 }
 
 func CreateOrUpdateHPA(clientset *kubernetes.Clientset, ctx context.Context, opts HPAOptions) error {
@@ -40,7 +40,7 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, ctx context.Context, opt
 						Name: "cpu",
 						Target: autoscalingv2beta2.MetricTarget{
 							Type:               autoscalingv2beta2.UtilizationMetricType,
-							AverageUtilization: &opts.CPUPercentage,
+							AverageUtilization: &opts.CPURate,
 						},
 					},
 				},

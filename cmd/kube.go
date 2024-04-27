@@ -63,7 +63,7 @@ func init() {
 	viper.SetDefault("kube.hpa.enabled", false)
 	viper.SetDefault("kube.hpa.minreplicas", 1)
 	viper.SetDefault("kube.hpa.maxreplicas", 10)
-	viper.SetDefault("kube.hpa.cpupercent", 50)
+	viper.SetDefault("kube.hpa.cpurate", 50)
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")
@@ -116,7 +116,7 @@ func init() {
 	kubeCmd.Flags().BoolVar(&kubeOptions.hpaOptions.Enabled, "kube.hpa.enabled", viper.GetBool("kube.hpa.enabled"), "kube.hpa.enabled")
 	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MinReplicas, "kube.hpa.minreplicas", viper.GetInt32("kube.hpa.minreplicas"), "kube.hpa.minreplicas")
 	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MaxReplicas, "kube.hpa.maxreplicas", viper.GetInt32("kube.hpa.maxreplicas"), "kube.hpa.maxreplicas")
-	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.CPUPercentage, "kube.hpa.cpupercentage", viper.GetInt32("kube.hpa.cpupercentage"), "kube.hpa.cpupercentage")
+	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.CPURate, "kube.hpa.cpurate", viper.GetInt32("kube.hpa.cpurate"), "kube.hpa.cpurate")
 }
 
 var kubeCmd = &cobra.Command{

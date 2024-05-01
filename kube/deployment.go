@@ -148,19 +148,23 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Conte
 			return fmt.Errorf("failed to get pvc: %v", err)
 		}
 
-		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, corev1.Volume{
-			Name: "data",
-			VolumeSource: corev1.VolumeSource{
-				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-					ClaimName: pvc.Name,
+		deployment.Spec.Template.Spec.Volumes = []corev1.Volume{
+			{
+				Name: "data",
+				VolumeSource: corev1.VolumeSource{
+					PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+						ClaimName: pvc.Name,
+					},
 				},
 			},
-		})
+		}
 
-		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(deployment.Spec.Template.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
-			Name:      "data",
-			MountPath: opts.VolumeMount.MountPath,
-		})
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "data",
+				MountPath: opts.VolumeMount.MountPath,
+			},
+		}
 	}
 
 	_, err := clientset.AppsV1().Deployments(opts.Namespace).Create(ctx, deployment, metav1.CreateOptions{})

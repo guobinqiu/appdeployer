@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -20,26 +20,26 @@ type HPAOptions struct {
 }
 
 func CreateOrUpdateHPA(clientset *kubernetes.Clientset, ctx context.Context, opts HPAOptions) error {
-	hpa := &autoscalingv2beta2.HorizontalPodAutoscaler{
+	hpa := &autoscalingv2.HorizontalPodAutoscaler{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      opts.Name,
 			Namespace: opts.Namespace,
 		},
-		Spec: autoscalingv2beta2.HorizontalPodAutoscalerSpec{
-			ScaleTargetRef: autoscalingv2beta2.CrossVersionObjectReference{
+		Spec: autoscalingv2.HorizontalPodAutoscalerSpec{
+			ScaleTargetRef: autoscalingv2.CrossVersionObjectReference{
 				APIVersion: "app/v1",
 				Kind:       "Deployment",
 				Name:       opts.Name,
 			},
 			MinReplicas: &opts.MinReplicas,
 			MaxReplicas: opts.MaxReplicas,
-			Metrics: []autoscalingv2beta2.MetricSpec{
+			Metrics: []autoscalingv2.MetricSpec{
 				{
-					Type: autoscalingv2beta2.ResourceMetricSourceType,
-					Resource: &autoscalingv2beta2.ResourceMetricSource{
+					Type: autoscalingv2.ResourceMetricSourceType,
+					Resource: &autoscalingv2.ResourceMetricSource{
 						Name: "cpu",
-						Target: autoscalingv2beta2.MetricTarget{
-							Type:               autoscalingv2beta2.UtilizationMetricType,
+						Target: autoscalingv2.MetricTarget{
+							Type:               autoscalingv2.UtilizationMetricType,
 							AverageUtilization: &opts.CPURate,
 						},
 					},
@@ -48,7 +48,7 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, ctx context.Context, opt
 		},
 	}
 
-	if _, err := clientset.AutoscalingV2beta2().HorizontalPodAutoscalers(opts.Namespace).Create(ctx, hpa, metav1.CreateOptions{}); err != nil {
+	if _, err := clientset.AutoscalingV2().HorizontalPodAutoscalers(opts.Namespace).Create(ctx, hpa, metav1.CreateOptions{}); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create hpa resource: %v", err)
 		}
@@ -61,7 +61,7 @@ func CreateOrUpdateHPA(clientset *kubernetes.Clientset, ctx context.Context, opt
 }
 
 func DeleteHPA(clientset *kubernetes.Clientset, ctx context.Context, opts HPAOptions) error {
-	err := clientset.AutoscalingV2beta2().HorizontalPodAutoscalers(opts.Namespace).Delete(ctx, opts.Name, metav1.DeleteOptions{})
+	err := clientset.AutoscalingV2().HorizontalPodAutoscalers(opts.Namespace).Delete(ctx, opts.Name, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete hpa resource: %v", err)
 	}

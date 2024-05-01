@@ -71,7 +71,7 @@ func init() {
 
 	viper.SetDefault("kube.pvc.accessmode", "readwriteonce")
 	viper.SetDefault("kube.pvc.storageclassname", "openebs-hostpath")
-	viper.SetDefault("kube.pvc.storagesize", "1G")
+	viper.SetDefault("kube.pvc.storagesize", "100M")
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")

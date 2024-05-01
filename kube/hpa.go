@@ -66,7 +66,7 @@ func DeleteHPA(clientset *kubernetes.Clientset, ctx context.Context, opts HPAOpt
 		return fmt.Errorf("failed to delete hpa resource: %v", err)
 	}
 	if apierrors.IsNotFound(err) {
-		fmt.Printf("hpa %s in namespace %s not found, no action taken\n", opts.Name, opts.Namespace)
+		fmt.Printf("hpa resource %s in namespace %s not found, no action taken\n", opts.Name, opts.Namespace)
 	} else {
 		fmt.Printf("hpa resource %s in namespace %s successfully deleted\n", opts.Name, opts.Namespace)
 	}

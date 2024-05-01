@@ -10,7 +10,7 @@ import (
 	"github.com/guobinqiu/appdeployer/helpers"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -39,6 +39,7 @@ type DeploymentOptions struct {
 	EnvVars        []string
 	LivenessProbe  LivenessProbe
 	ReadinessProbe ReadinessProbe
+	VolumeMount    VolumeMount
 }
 
 type LivenessProbe struct {
@@ -67,6 +68,11 @@ type ProbeParams struct {
 	PeriodSeconds       int32
 	SuccessThreshold    int32
 	FailureThreshold    int32
+}
+
+type VolumeMount struct {
+	Enabled   bool
+	MountPath string
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {
@@ -136,9 +142,30 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Conte
 	}
 	deployment.Spec.Template.Spec.Containers[0] = container
 
+	if opts.VolumeMount.Enabled {
+		pvc, err := clientset.CoreV1().PersistentVolumeClaims(opts.Namespace).Get(ctx, opts.Name, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("failed to get pvc: %v", err)
+		}
+
+		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, corev1.Volume{
+			Name: "data",
+			VolumeSource: corev1.VolumeSource{
+				PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+					ClaimName: pvc.Name,
+				},
+			},
+		})
+
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(deployment.Spec.Template.Spec.Containers[0].VolumeMounts, corev1.VolumeMount{
+			Name:      "data",
+			MountPath: opts.VolumeMount.MountPath,
+		})
+	}
+
 	_, err := clientset.AppsV1().Deployments(opts.Namespace).Create(ctx, deployment, metav1.CreateOptions{})
 	if err != nil {
-		if !errors.IsAlreadyExists(err) {
+		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create deployment resource: %v", err)
 		}
 		fmt.Println("deployment resource already exists, attempting update...")
@@ -151,6 +178,19 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Conte
 		fmt.Println("deployment resource successfully created")
 	}
 
+	return nil
+}
+
+func DeleteDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {
+	err := clientset.AppsV1().Deployments(opts.Namespace).Delete(ctx, opts.Name, metav1.DeleteOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("failed to delete deployment resource: %v", err)
+	}
+	if apierrors.IsNotFound(err) {
+		fmt.Printf("deployment resource %s in namespace %s not found, no action taken\n", opts.Name, opts.Namespace)
+	} else {
+		fmt.Printf("deployment resource %s in namespace %s successfully deleted\n", opts.Name, opts.Namespace)
+	}
 	return nil
 }
 

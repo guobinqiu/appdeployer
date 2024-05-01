@@ -20,6 +20,7 @@ type KubeOptions struct {
 	serviceOptions    kube.ServiceOptions
 	deploymentOptions kube.DeploymentOptions
 	hpaOptions        kube.HPAOptions
+	pvcOptions        kube.PVCOptions
 }
 
 var dockerOptions docker.DockerOptions
@@ -60,10 +61,17 @@ func init() {
 	viper.SetDefault("kube.deployment.readinessprobe.successthreshold", 1)
 	viper.SetDefault("kube.deployment.readinessprobe.failurethreshold", 3)
 
+	viper.SetDefault("kube.deployment.volumemount.enabled", false)
+	viper.SetDefault("kube.deployment.volumemount.mountpath", "/app/data")
+
 	viper.SetDefault("kube.hpa.enabled", false)
 	viper.SetDefault("kube.hpa.minreplicas", 1)
 	viper.SetDefault("kube.hpa.maxreplicas", 10)
 	viper.SetDefault("kube.hpa.cpurate", 50)
+
+	viper.SetDefault("kube.pvc.accessmode", "readwriteonce")
+	viper.SetDefault("kube.pvc.storageclassname", "openebs-hostpath")
+	viper.SetDefault("kube.pvc.storagesize", "1G")
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")
@@ -113,10 +121,17 @@ func init() {
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.SuccessThreshold, "kube.deployment.readinessprobe.successthreshold", viper.GetInt32("kube.deployment.readinessprobe.successthreshold"), "kube.deployment.readinessprobe.successthreshold")
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.FailureThreshold, "kube.deployment.readinessprobe.failurethreshold", viper.GetInt32("kube.deployment.readinessprobe.failurethreshold"), "kube.deployment.readinessprobe.failurethreshold")
 
+	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.VolumeMount.Enabled, "kube.deployment.volumemount.enabled", viper.GetBool("kube.deployment.volumemount.enabled"), "kube.deployment.volumemount.enabled")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.VolumeMount.MountPath, "kube.deployment.volumemount.mountpath", viper.GetString("kube.deployment.volumemount.mountpath"), "kube.deployment.volumemount.mountpath")
+
 	kubeCmd.Flags().BoolVar(&kubeOptions.hpaOptions.Enabled, "kube.hpa.enabled", viper.GetBool("kube.hpa.enabled"), "kube.hpa.enabled")
 	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MinReplicas, "kube.hpa.minreplicas", viper.GetInt32("kube.hpa.minreplicas"), "kube.hpa.minreplicas")
 	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MaxReplicas, "kube.hpa.maxreplicas", viper.GetInt32("kube.hpa.maxreplicas"), "kube.hpa.maxreplicas")
 	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.CPURate, "kube.hpa.cpurate", viper.GetInt32("kube.hpa.cpurate"), "kube.hpa.cpurate")
+
+	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.AccessMode, "kube.pvc.accessmode", viper.GetString("kube.pvc.accessmode"), "kube.pvc.accessmode")
+	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.StorageClassName, "kube.pvc.storageclassname", viper.GetString("kube.pvc.storageclassname"), "kube.pvc.storageclassname")
+	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.StorageSize, "kube.pvc.storagesize", viper.GetString("kube.pvc.storagesize"), "kube.pvc.storagesize")
 }
 
 var kubeCmd = &cobra.Command{
@@ -179,6 +194,27 @@ var kubeCmd = &cobra.Command{
 			Namespace: kubeOptions.Namespace,
 		}); err != nil {
 			panic(err)
+		}
+
+		if kubeOptions.deploymentOptions.VolumeMount.Enabled {
+			kubeOptions.pvcOptions.Name = defaultOptions.AppName
+			kubeOptions.pvcOptions.Namespace = kubeOptions.Namespace
+			if err := kube.CreateOrUpdatePVC(clientset, ctx, kubeOptions.pvcOptions); err != nil {
+				panic(err)
+			}
+		} else {
+			kubeOptions.deploymentOptions.Name = defaultOptions.AppName
+			kubeOptions.deploymentOptions.Namespace = kubeOptions.Namespace
+			kubeOptions.deploymentOptions.Image = dockerOptions.Image()
+			if err := kube.DeleteDeployment(clientset, ctx, kubeOptions.deploymentOptions); err != nil {
+				panic(err)
+			}
+
+			kubeOptions.hpaOptions.Name = defaultOptions.AppName
+			kubeOptions.hpaOptions.Namespace = kubeOptions.Namespace
+			if err := kube.DeletePVC(clientset, ctx, kubeOptions.hpaOptions); err != nil {
+				panic(err)
+			}
 		}
 
 		kubeOptions.deploymentOptions.Name = defaultOptions.AppName

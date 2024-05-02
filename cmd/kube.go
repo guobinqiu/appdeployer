@@ -39,7 +39,6 @@ func init() {
 	viper.SetDefault("kube.deployment.port", 8000)
 	viper.SetDefault("kube.deployment.maxsurge", "1")
 	viper.SetDefault("kube.deployment.maxunavailable", "0")
-	viper.SetDefault("kube.deployment.timezone", "Asia/Shanghai")
 
 	viper.SetDefault("kube.deployment.livenessprobe.enabled", false)
 	viper.SetDefault("kube.deployment.livenessprobe.type", kube.ProbeTypeHTTPGet)

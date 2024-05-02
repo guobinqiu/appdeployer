@@ -6,13 +6,13 @@
 
 - [x] 扩展Deployment的其他常用特性, 包括滚动发布的策略, cpu和内存的资源隔离配置, 弹性伸缩, 健康检查等
 - [x] 增加一个持久化卷,比如sqlite的数据可以写入持久化卷
-- 目前只支持发布go,java,node,还需要包含其他语言,如python
-- ansible的role还需要优化,目前go和java的应用都是nohup在后台执行, 需要配置systemctl或者supervisor等
-- ansible的ssh安全性设置
-- 命令行用法的描述需要优化
-- 缺少使用手册(中/英), 所有的命令参数可先参见config.ini, 包括其默认值
-- 存在各类bugs
-- 命令行逻辑提取到API, 增加WebUI
+- [] 目前只支持发布go,java,node,还需要包含其他语言,如python
+- [] ansible的role还需要优化,目前go和java的应用都是nohup在后台执行, 需要配置systemctl或者supervisor等
+- [] ansible的ssh安全性设置
+- [] 命令行用法的描述需要优化
+- [] 缺少使用手册(中/英), 所有的命令参数可先参见config.ini, 包括其默认值
+- [] 存在各类bugs
+- [] 命令行逻辑提取到API, 增加WebUI
 - ...
 
 ## 发布到Kubernetes集群

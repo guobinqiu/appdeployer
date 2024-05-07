@@ -11,7 +11,6 @@
 - [ ] ansible的ssh安全性设置
 - [ ] 命令行用法的描述需要优化
 - [ ] 缺少使用手册(中/英), 所有的命令参数可先参见config.ini, 包括其默认值
-- [ ] 存在各类bugs
 - [ ] 命令行逻辑提取到API, 增加WebUI
 - [ ] ...
 
@@ -20,11 +19,11 @@
 不同的集群环境可以给`--kube.kubeconfig`参数设置不同的kubeconfig文件, 目前镜像用的docker, 可以配置私有镜像
 
 ```
-go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=100m --kube.deployment.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai --kube.hpa.enabled=true --kube.deployment.volumemount.enabled=true
+go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --kube.kubeconfig=~/Downloads/config --docker.password=111111111 --kube.deployment.quota.cpulimit=100m --kube.deployment.quota.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true --kube.hpa.enabled=true --kube.deployment.volumemount.enabled=true -e TZ=Asia/Shanghai
 
-go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=100m --kube.deployment.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
+go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.quota.cpulimit=100m --kube.deployment.quota.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
 
-go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin  --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.cpulimit=100m --kube.deployment.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
+go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --kube.kubeconfig=~/Downloads/config --docker.password=*** --kube.deployment.quota.cpulimit=100m --kube.deployment.quota.memlimit=10mi --kube.deployment.livenessprobe.enabled=true --kube.deployment.readinessprobe.enabled=true -e TZ=Asia/Shanghai
 ```
 
 ## 发布到虚拟机集群

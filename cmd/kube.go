@@ -33,12 +33,14 @@ func init() {
 	viper.SetDefault("docker.registry", docker.DOCKERHUB)
 	viper.SetDefault("docker.tag", "latest")
 	viper.SetDefault("kube.kubeconfig", helpers.GetDefaultKubeConfig())
-	viper.SetDefault("kube.ingress.tls", true)
+	viper.SetDefault("kube.ingress.tls", false)
 	viper.SetDefault("kube.service.port", 8000)
+
 	viper.SetDefault("kube.deployment.replicas", 1)
 	viper.SetDefault("kube.deployment.port", 8000)
-	viper.SetDefault("kube.deployment.maxsurge", "1")
-	viper.SetDefault("kube.deployment.maxunavailable", "0")
+
+	viper.SetDefault("kube.deployment.rollingupdate.maxsurge", "1")
+	viper.SetDefault("kube.deployment.rollingupdate.maxunavailable", "0")
 
 	viper.SetDefault("kube.deployment.livenessprobe.enabled", false)
 	viper.SetDefault("kube.deployment.livenessprobe.type", kube.ProbeTypeHTTPGet)
@@ -73,64 +75,64 @@ func init() {
 	viper.SetDefault("kube.pvc.storagesize", "1G")
 
 	// docker
-	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "docker.dockerconfig")
-	kubeCmd.Flags().StringVar(&dockerOptions.Dockerfile, "docker.dockerfile", viper.GetString("docker.dockerfile"), "docker.dockerfile")
-	kubeCmd.Flags().StringVar(&dockerOptions.Registry, "docker.registry", viper.GetString("docker.registry"), "docker.registry")
-	kubeCmd.Flags().StringVar(&dockerOptions.Username, "docker.username", viper.GetString("docker.username"), "docker.username")
-	kubeCmd.Flags().StringVar(&dockerOptions.Password, "docker.password", viper.GetString("docker.password"), "docker.password")
-	kubeCmd.Flags().StringVar(&dockerOptions.Repository, "docker.repository", viper.GetString("docker.repository"), "docker.repository")
-	kubeCmd.Flags().StringVar(&dockerOptions.Tag, "docker.tag", viper.GetString("docker.tag"), "docker.tag")
+	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "Path to docker configuration. Defaults to ~/.docker/config.json")
+	kubeCmd.Flags().StringVar(&dockerOptions.Dockerfile, "docker.dockerfile", viper.GetString("docker.dockerfile"), "Path to Dockerfile for building image. Defaults to appdir/Dockerfile")
+	kubeCmd.Flags().StringVar(&dockerOptions.Registry, "docker.registry", viper.GetString("docker.registry"), "URL for docker registry. Defaults to https://index.docker.io/v1/")
+	kubeCmd.Flags().StringVar(&dockerOptions.Username, "docker.username", viper.GetString("docker.username"), "Username for docker registry")
+	kubeCmd.Flags().StringVar(&dockerOptions.Password, "docker.password", viper.GetString("docker.password"), "Password for docker registry")
+	kubeCmd.Flags().StringVar(&dockerOptions.Repository, "docker.repository", viper.GetString("docker.repository"), "Repository for docker registry")
+	kubeCmd.Flags().StringVar(&dockerOptions.Tag, "docker.tag", viper.GetString("docker.tag"), "Tag for docker registry. Defaults to latest")
 
 	//kube
-	kubeCmd.Flags().StringVar(&kubeOptions.Kubeconfig, "kube.kubeconfig", viper.GetString("kube.kubeconfig"), "kube.kubeconfig")
-	kubeCmd.Flags().StringVar(&kubeOptions.Namespace, "kube.namespace", viper.GetString("kube.namespace"), "kube.namespace")
-	kubeCmd.Flags().StringVar(&kubeOptions.ingressOptions.Host, "kube.ingress.host", viper.GetString("kube.ingress.host"), "kube.ingress.host")
-	kubeCmd.Flags().BoolVar(&kubeOptions.ingressOptions.TLS, "kube.ingress.tls", viper.GetBool("kube.ingress.tls"), "kube.ingress.tls")
-	kubeCmd.Flags().Int32Var(&kubeOptions.serviceOptions.Port, "kube.service.port", viper.GetInt32("kube.service.port"), "kube.service.port")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Replicas, "kube.deployment.replicas", viper.GetInt32("kube.deployment.replicas"), "kube.deployment.replicas")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Port, "kube.deployment.port", viper.GetInt32("kube.deployment.port"), "kube.deployment.port")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MaxSurge, "kube.deployment.maxsurge", viper.GetString("kube.deployment.maxsurge"), "kube.deployment.maxsurge")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MaxUnavailable, "kube.deployment.maxunavailable", viper.GetString("kube.deployment.maxunavailable"), "kube.deployment.maxunavailable")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.CPULimit, "kube.deployment.cpulimit", viper.GetString("kube.deployment.cpulimit"), "kube.deployment.cpulimit")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MemLimit, "kube.deployment.memlimit", viper.GetString("kube.deployment.memlimit"), "kube.deployment.memlimit")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.CPURequest, "kube.deployment.cpurequest", viper.GetString("kube.deployment.cpurequest"), "kube.deployment.cpurequest")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.MemRequest, "kube.deployment.memrequest", viper.GetString("kube.deployment.memrequest"), "kube.deployment.memrequest")
+	kubeCmd.Flags().StringVar(&kubeOptions.Kubeconfig, "kube.kubeconfig", viper.GetString("kube.kubeconfig"), "Path to kubernetes configuration. Defaults to ~/.kube/config")
+	kubeCmd.Flags().StringVar(&kubeOptions.Namespace, "kube.namespace", viper.GetString("kube.namespace"), "Namespace for app resources. Defaults to appname")
+	kubeCmd.Flags().StringVar(&kubeOptions.ingressOptions.Host, "kube.ingress.host", viper.GetString("kube.ingress.host"), "Host for app ingress. Defaults to appName.com")
+	kubeCmd.Flags().BoolVar(&kubeOptions.ingressOptions.TLS, "kube.ingress.tls", viper.GetBool("kube.ingress.tls"), "Enable or disable TLS for app ingress. Defaults to false")
+	kubeCmd.Flags().Int32Var(&kubeOptions.serviceOptions.Port, "kube.service.port", viper.GetInt32("kube.service.port"), "Port for app service. Defaults to 8000")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Replicas, "kube.deployment.replicas", viper.GetInt32("kube.deployment.replicas"), "Number of app pods. Defaults to 1")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Port, "kube.deployment.port", viper.GetInt32("kube.deployment.port"), "Container port for each app pod. Defaults to 8000, as same as service port")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.RollingUpdate.MaxSurge, "kube.deployment.rollingupdate.maxsurge", viper.GetString("kube.deployment.rollingupdate.maxsurge"), "MaxSurge for rolling update app pods. Defaults to 1")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.RollingUpdate.MaxUnavailable, "kube.deployment.rollingupdate.maxunavailable", viper.GetString("kube.deployment.rollingupdate.maxunavailable"), "MaxUnavailable for rolling update app pods. Defaults to 0")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.Quota.CPULimit, "kube.deployment.quota.cpulimit", viper.GetString("kube.deployment.quota.cpulimit"), "CPU limit for each app container (one pod one container)")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.Quota.MemLimit, "kube.deployment.quota.memlimit", viper.GetString("kube.deployment.quota.memlimit"), "Memory limit for each app container (one pod one container)")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.Quota.CPURequest, "kube.deployment.quota.cpurequest", viper.GetString("kube.deployment.quota.cpurequest"), "CPU request for each app container (one pod one container)")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.Quota.MemRequest, "kube.deployment.quota.memrequest", viper.GetString("kube.deployment.quota.memrequest"), "Memory request for each app container (one pod one container)")
 
 	kubeCmd.Flags().StringSliceVarP(&kubeOptions.deploymentOptions.EnvVars, "env", "e", nil, "Set environment variables in the form of key=value")
 
-	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.LivenessProbe.Enabled, "kube.deployment.livenessprobe.enabled", viper.GetBool("kube.deployment.livenessprobe.enabled"), "kube.deployment.livenessprobe.enabled")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Type, "kube.deployment.livenessprobe.type", viper.GetString("kube.deployment.livenessprobe.type"), "kube.deployment.livenessprobe.type")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Path, "kube.deployment.livenessprobe.path", viper.GetString("kube.deployment.livenessprobe.path"), "kube.deployment.livenessprobe.path")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Schema, "kube.deployment.livenessprobe.schema", viper.GetString("kube.deployment.livenessprobe.schema"), "kube.deployment.livenessprobe.schema")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Command, "kube.deployment.livenessprobe.command", viper.GetString("kube.deployment.livenessprobe.command"), "kube.deployment.livenessprobe.command")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.InitialDelaySeconds, "kube.deployment.livenessprobe.initialdelayseconds", viper.GetInt32("kube.deployment.livenessprobe.initialdelayseconds"), "kube.deployment.livenessprobe.initialdelayseconds")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.TimeoutSeconds, "kube.deployment.livenessprobe.timeoutseconds", viper.GetInt32("kube.deployment.livenessprobe.timeoutseconds"), "kube.deployment.livenessprobe.timeoutseconds")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.PeriodSeconds, "kube.deployment.livenessprobe.periodseconds", viper.GetInt32("kube.deployment.livenessprobe.periodseconds"), "kube.deployment.livenessprobe.periodseconds")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.SuccessThreshold, "kube.deployment.livenessprobe.successthreshold", viper.GetInt32("kube.deployment.livenessprobe.successthreshold"), "kube.deployment.livenessprobe.successthreshold")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.FailureThreshold, "kube.deployment.livenessprobe.failurethreshold", viper.GetInt32("kube.deployment.livenessprobe.failurethreshold"), "kube.deployment.livenessprobe.failurethreshold")
+	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.LivenessProbe.Enabled, "kube.deployment.livenessprobe.enabled", viper.GetBool("kube.deployment.livenessprobe.enabled"), "Enable or disable liveness probe for each app container (one pod one container). Defaults to false")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Type, "kube.deployment.livenessprobe.type", viper.GetString("kube.deployment.livenessprobe.type"), "Type of liveness probe for each app container (one pod one container). Such as HTTPGet, TCPSocket and Exec. Defaults to HTTPGet")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Path, "kube.deployment.livenessprobe.path", viper.GetString("kube.deployment.livenessprobe.path"), "Path of liveness probe for each app container (one pod one container). Correspond to HTTPGet type. Defaults to /")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Schema, "kube.deployment.livenessprobe.schema", viper.GetString("kube.deployment.livenessprobe.schema"), "Schema of liveness probe for each app container (one pod one container). Correspond to HTTPGet type. Such as HTTP and HTTPS. Defaults to HTTP")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.LivenessProbe.Command, "kube.deployment.livenessprobe.command", viper.GetString("kube.deployment.livenessprobe.command"), "Command of liveness probe for each app container (one pod one container). Correspond to Exec type")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.InitialDelaySeconds, "kube.deployment.livenessprobe.initialdelayseconds", viper.GetInt32("kube.deployment.livenessprobe.initialdelayseconds"), "Initial delay seconds of liveness probe for each app container (one pod one container). Defaults to 0")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.TimeoutSeconds, "kube.deployment.livenessprobe.timeoutseconds", viper.GetInt32("kube.deployment.livenessprobe.timeoutseconds"), "Timeout seconds of liveness probe for each app container (one pod one container). Defaults to 1")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.PeriodSeconds, "kube.deployment.livenessprobe.periodseconds", viper.GetInt32("kube.deployment.livenessprobe.periodseconds"), "Period seconds of liveness probe for each app container (one pod one container). Defaults to 10")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.SuccessThreshold, "kube.deployment.livenessprobe.successthreshold", viper.GetInt32("kube.deployment.livenessprobe.successthreshold"), "Success threshold of liveness probe for each app container (one pod one container). Defaults to 1")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.LivenessProbe.FailureThreshold, "kube.deployment.livenessprobe.failurethreshold", viper.GetInt32("kube.deployment.livenessprobe.failurethreshold"), "Failure threshold of liveness probe for each app container (one pod one container). Defaults to 3")
 
-	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.ReadinessProbe.Enabled, "kube.deployment.readinessprobe.enabled", viper.GetBool("kube.deployment.readinessprobe.enabled"), "kube.deployment.readinessprobe.enabled")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Type, "kube.deployment.readinessprobe.type", viper.GetString("kube.deployment.readinessprobe.type"), "kube.deployment.readinessprobe.type")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Path, "kube.deployment.readinessprobe.path", viper.GetString("kube.deployment.readinessprobe.path"), "kube.deployment.readinessprobe.path")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Schema, "kube.deployment.readinessprobe.schema", viper.GetString("kube.deployment.readinessprobe.schema"), "kube.deployment.readinessprobe.schema")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Command, "kube.deployment.readinessprobe.command", viper.GetString("kube.deployment.readinessprobe.command"), "kube.deployment.readinessprobe.command")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.InitialDelaySeconds, "kube.deployment.readinessprobe.initialdelayseconds", viper.GetInt32("kube.deployment.readinessprobe.initialdelayseconds"), "kube.deployment.readinessprobe.initialdelayseconds")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.TimeoutSeconds, "kube.deployment.readinessprobe.timeoutseconds", viper.GetInt32("kube.deployment.readinessprobe.timeoutseconds"), "kube.deployment.readinessprobe.timeoutseconds")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.PeriodSeconds, "kube.deployment.readinessprobe.periodseconds", viper.GetInt32("kube.deployment.readinessprobe.periodseconds"), "kube.deployment.readinessprobe.periodseconds")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.SuccessThreshold, "kube.deployment.readinessprobe.successthreshold", viper.GetInt32("kube.deployment.readinessprobe.successthreshold"), "kube.deployment.readinessprobe.successthreshold")
-	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.FailureThreshold, "kube.deployment.readinessprobe.failurethreshold", viper.GetInt32("kube.deployment.readinessprobe.failurethreshold"), "kube.deployment.readinessprobe.failurethreshold")
+	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.ReadinessProbe.Enabled, "kube.deployment.readinessprobe.enabled", viper.GetBool("kube.deployment.readinessprobe.enabled"), "Enable or disable readiness probe for each app container (one pod one container)")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Type, "kube.deployment.readinessprobe.type", viper.GetString("kube.deployment.readinessprobe.type"), "Type of readiness probe for each app container (one pod one container). Such as HTTPGet, TCPSocket and Exec. Defaults to HTTPGet")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Path, "kube.deployment.readinessprobe.path", viper.GetString("kube.deployment.readinessprobe.path"), "Path of readiness probe for each app container (one pod one container). Correspond to HTTPGet type. Defaults to /")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Schema, "kube.deployment.readinessprobe.schema", viper.GetString("kube.deployment.readinessprobe.schema"), "Schema of readiness probe for each app container (one pod one container). Correspond to HTTPGet type. Such as HTTP and HTTPS. Defaults to HTTP")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.ReadinessProbe.Command, "kube.deployment.readinessprobe.command", viper.GetString("kube.deployment.readinessprobe.command"), "Command of readiness probe for each app container (one pod one container). Correspond to Exec type")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.InitialDelaySeconds, "kube.deployment.readinessprobe.initialdelayseconds", viper.GetInt32("kube.deployment.readinessprobe.initialdelayseconds"), "Initial delay seconds of readiness probe for each app container (one pod one container). Defaults to 0")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.TimeoutSeconds, "kube.deployment.readinessprobe.timeoutseconds", viper.GetInt32("kube.deployment.readinessprobe.timeoutseconds"), "Timeout seconds of readiness probe for each app container (one pod one container). Defaults to 1")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.PeriodSeconds, "kube.deployment.readinessprobe.periodseconds", viper.GetInt32("kube.deployment.readinessprobe.periodseconds"), "Period seconds of readiness probe for each app container (one pod one container). Defaults to 10")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.SuccessThreshold, "kube.deployment.readinessprobe.successthreshold", viper.GetInt32("kube.deployment.readinessprobe.successthreshold"), "Success threshold of readiness probe for each app container (one pod one container). Defaults to 1")
+	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.ReadinessProbe.FailureThreshold, "kube.deployment.readinessprobe.failurethreshold", viper.GetInt32("kube.deployment.readinessprobe.failurethreshold"), "Failure threshold of readiness probe for each app container (one pod one container). Defaults to 3")
 
-	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.VolumeMount.Enabled, "kube.deployment.volumemount.enabled", viper.GetBool("kube.deployment.volumemount.enabled"), "kube.deployment.volumemount.enabled")
-	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.VolumeMount.MountPath, "kube.deployment.volumemount.mountpath", viper.GetString("kube.deployment.volumemount.mountpath"), "kube.deployment.volumemount.mountpath")
+	kubeCmd.Flags().BoolVar(&kubeOptions.deploymentOptions.VolumeMount.Enabled, "kube.deployment.volumemount.enabled", viper.GetBool("kube.deployment.volumemount.enabled"), "Enable or disable volume mount for each app pod. Defaults to false")
+	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.VolumeMount.MountPath, "kube.deployment.volumemount.mountpath", viper.GetString("kube.deployment.volumemount.mountpath"), "Path of volume mount for each app pod. Defaults to /app/data")
 
-	kubeCmd.Flags().BoolVar(&kubeOptions.hpaOptions.Enabled, "kube.hpa.enabled", viper.GetBool("kube.hpa.enabled"), "kube.hpa.enabled")
-	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MinReplicas, "kube.hpa.minreplicas", viper.GetInt32("kube.hpa.minreplicas"), "kube.hpa.minreplicas")
-	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MaxReplicas, "kube.hpa.maxreplicas", viper.GetInt32("kube.hpa.maxreplicas"), "kube.hpa.maxreplicas")
-	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.CPURate, "kube.hpa.cpurate", viper.GetInt32("kube.hpa.cpurate"), "kube.hpa.cpurate")
+	kubeCmd.Flags().BoolVar(&kubeOptions.hpaOptions.Enabled, "kube.hpa.enabled", viper.GetBool("kube.hpa.enabled"), "Enable or disable HPA (Horizontal Pod Autoscaler) for app pods. Defaults to false")
+	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MinReplicas, "kube.hpa.minreplicas", viper.GetInt32("kube.hpa.minreplicas"), "Number of minimum pods for HPA (Horizontal Pod Autoscaler). Defaults to 1")
+	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.MaxReplicas, "kube.hpa.maxreplicas", viper.GetInt32("kube.hpa.maxreplicas"), "Number of maximum pods for HPA (Horizontal Pod Autoscaler). Defaults to 10")
+	kubeCmd.Flags().Int32Var(&kubeOptions.hpaOptions.CPURate, "kube.hpa.cpurate", viper.GetInt32("kube.hpa.cpurate"), "Average CPU utilization for HPA (Horizontal Pod Autoscaler). Defaults to 50")
 
-	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.AccessMode, "kube.pvc.accessmode", viper.GetString("kube.pvc.accessmode"), "kube.pvc.accessmode")
-	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.StorageClassName, "kube.pvc.storageclassname", viper.GetString("kube.pvc.storageclassname"), "kube.pvc.storageclassname")
-	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.StorageSize, "kube.pvc.storagesize", viper.GetString("kube.pvc.storagesize"), "kube.pvc.storagesize")
+	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.AccessMode, "kube.pvc.accessmode", viper.GetString("kube.pvc.accessmode"), "Access mode of persistent storage for pod volumn mount. Such as ReadWriteOnce, ReadOnlyMany and ReadWriteMany. Defaults to ReadWriteOnce")
+	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.StorageClassName, "kube.pvc.storageclassname", viper.GetString("kube.pvc.storageclassname"), "Classname of persistent storage for pod volumn mount. Defaults to openebs-hostpath")
+	kubeCmd.Flags().StringVar(&kubeOptions.pvcOptions.StorageSize, "kube.pvc.storagesize", viper.GetString("kube.pvc.storagesize"), "Size of persistent storage for pod volumn mount. Defaults to 1G")
 }
 
 var kubeCmd = &cobra.Command{
@@ -175,7 +177,7 @@ var kubeCmd = &cobra.Command{
 			panic(err)
 		}
 
-		// Update (or create if not exists) kubernetes resource objects
+		// Update or create kubernetes resource objects
 		if err := kube.CreateOrUpdateNamespace(clientset, ctx, kubeOptions.Namespace); err != nil {
 			panic(err)
 		}
@@ -285,7 +287,6 @@ func setKubeOptions() {
 	if helpers.IsBlank(kubeOptions.Namespace) {
 		kubeOptions.Namespace = defaultOptions.AppName
 	}
-
 	if helpers.IsBlank(kubeOptions.ingressOptions.Host) {
 		kubeOptions.ingressOptions.Host = fmt.Sprintf("%s.com", defaultOptions.AppName)
 	}

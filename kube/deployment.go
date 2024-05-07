@@ -30,16 +30,24 @@ type DeploymentOptions struct {
 	Replicas       int32
 	Image          string
 	Port           int32
-	MaxSurge       string
-	MaxUnavailable string
-	CPURequest     string
-	CPULimit       string
-	MemRequest     string
-	MemLimit       string
+	RollingUpdate  RollingUpdate
+	Quota          Quota
 	EnvVars        []string
 	LivenessProbe  LivenessProbe
 	ReadinessProbe ReadinessProbe
 	VolumeMount    VolumeMount
+}
+
+type RollingUpdate struct {
+	MaxSurge       string
+	MaxUnavailable string
+}
+
+type Quota struct {
+	CPURequest string
+	CPULimit   string
+	MemRequest string
+	MemLimit   string
 }
 
 type LivenessProbe struct {
@@ -76,8 +84,8 @@ type VolumeMount struct {
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {
-	maxSurge := intstr.Parse(opts.MaxSurge)
-	maxUnavailable := intstr.Parse(opts.MaxUnavailable)
+	maxSurge := intstr.Parse(opts.RollingUpdate.MaxSurge)
+	maxUnavailable := intstr.Parse(opts.RollingUpdate.MaxUnavailable)
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -250,15 +258,15 @@ func parseMemorySize(input string) (*resource.Quantity, error) {
 
 func setResource(container *corev1.Container, opts DeploymentOptions) error {
 	limits := corev1.ResourceList{}
-	if !helpers.IsBlank(opts.CPULimit) {
-		cpuLimit, err := parseCPUSize(strings.ToLower(opts.CPULimit))
+	if !helpers.IsBlank(opts.Quota.CPULimit) {
+		cpuLimit, err := parseCPUSize(strings.ToLower(opts.Quota.CPULimit))
 		if err != nil {
 			return err
 		}
 		limits[corev1.ResourceCPU] = *cpuLimit
 	}
-	if !helpers.IsBlank(opts.MemLimit) {
-		memLimit, err := parseMemorySize(strings.ToLower(opts.MemLimit))
+	if !helpers.IsBlank(opts.Quota.MemLimit) {
+		memLimit, err := parseMemorySize(strings.ToLower(opts.Quota.MemLimit))
 		if err != nil {
 			return err
 		}
@@ -266,15 +274,15 @@ func setResource(container *corev1.Container, opts DeploymentOptions) error {
 	}
 
 	requests := corev1.ResourceList{}
-	if !helpers.IsBlank(opts.CPURequest) {
-		cpuRequest, err := parseCPUSize(strings.ToLower(opts.CPURequest))
+	if !helpers.IsBlank(opts.Quota.CPURequest) {
+		cpuRequest, err := parseCPUSize(strings.ToLower(opts.Quota.CPURequest))
 		if err != nil {
 			return err
 		}
 		requests[corev1.ResourceCPU] = *cpuRequest
 	}
-	if !helpers.IsBlank(opts.MemRequest) {
-		memRequest, err := parseMemorySize(strings.ToLower(opts.MemRequest))
+	if !helpers.IsBlank(opts.Quota.MemRequest) {
+		memRequest, err := parseMemorySize(strings.ToLower(opts.Quota.MemRequest))
 		if err != nil {
 			return err
 		}

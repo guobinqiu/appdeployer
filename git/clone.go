@@ -9,7 +9,7 @@ import (
 )
 
 type GitOptions struct {
-	Pull     bool
+	Enabled  bool
 	Repo     string
 	AppDir   string
 	Username string

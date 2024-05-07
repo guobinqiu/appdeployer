@@ -32,8 +32,13 @@ func init() {
 	viper.SetDefault("docker.dockerfile", "./Dockerfile")
 	viper.SetDefault("docker.registry", docker.DOCKERHUB)
 	viper.SetDefault("docker.tag", "latest")
+
 	viper.SetDefault("kube.kubeconfig", helpers.GetDefaultKubeConfig())
+
 	viper.SetDefault("kube.ingress.tls", false)
+	viper.SetDefault("kube.ingress.selfsigned", false)
+	viper.SetDefault("kube.ingress.selfsignedyears", 1)
+
 	viper.SetDefault("kube.service.port", 8000)
 
 	viper.SetDefault("kube.deployment.replicas", 1)
@@ -86,9 +91,16 @@ func init() {
 	//kube
 	kubeCmd.Flags().StringVar(&kubeOptions.Kubeconfig, "kube.kubeconfig", viper.GetString("kube.kubeconfig"), "Path to kubernetes configuration. Defaults to ~/.kube/config")
 	kubeCmd.Flags().StringVar(&kubeOptions.Namespace, "kube.namespace", viper.GetString("kube.namespace"), "Namespace for app resources. Defaults to appname")
+
 	kubeCmd.Flags().StringVar(&kubeOptions.ingressOptions.Host, "kube.ingress.host", viper.GetString("kube.ingress.host"), "Host for app ingress. Defaults to appName.com")
-	kubeCmd.Flags().BoolVar(&kubeOptions.ingressOptions.TLS, "kube.ingress.tls", viper.GetBool("kube.ingress.tls"), "Enable or disable TLS for app ingress. Defaults to false")
+	kubeCmd.Flags().BoolVar(&kubeOptions.ingressOptions.TLS, "kube.ingress.tls", viper.GetBool("kube.ingress.tls"), "Enable or disable TLS for app host. Defaults to false")
+	kubeCmd.Flags().BoolVar(&kubeOptions.ingressOptions.SelfSigned, "kube.ingress.selfsigned", viper.GetBool("kube.ingress.selfsigned"), "Enable or disable self-signed certificate. Defaults to false")
+	kubeCmd.Flags().IntVar(&kubeOptions.ingressOptions.SelfSignedYears, "kube.ingress.selfsignedyears", viper.GetInt("kube.ingress.selfsignedyears"), "Validity of self-signed certificate. Defaults to 1 year")
+	kubeCmd.Flags().StringVar(&kubeOptions.ingressOptions.CrtPath, "kube.ingress.crtpath", viper.GetString("kube.ingress.crtpath"), "Path to .crt file (PEM format) for non self-signed certificate")
+	kubeCmd.Flags().StringVar(&kubeOptions.ingressOptions.KeyPath, "kube.ingress.keypath", viper.GetString("kube.ingress.keypath"), "Path to .key file (PEM format) for non self-signed certificate")
+
 	kubeCmd.Flags().Int32Var(&kubeOptions.serviceOptions.Port, "kube.service.port", viper.GetInt32("kube.service.port"), "Port for app service. Defaults to 8000")
+
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Replicas, "kube.deployment.replicas", viper.GetInt32("kube.deployment.replicas"), "Number of app pods. Defaults to 1")
 	kubeCmd.Flags().Int32Var(&kubeOptions.deploymentOptions.Port, "kube.deployment.port", viper.GetInt32("kube.deployment.port"), "Container port for each app pod. Defaults to 8000, as same as service port")
 	kubeCmd.Flags().StringVar(&kubeOptions.deploymentOptions.RollingUpdate.MaxSurge, "kube.deployment.rollingupdate.maxsurge", viper.GetString("kube.deployment.rollingupdate.maxsurge"), "MaxSurge for rolling update app pods. Defaults to 1")
@@ -287,7 +299,17 @@ func setKubeOptions() {
 	if helpers.IsBlank(kubeOptions.Namespace) {
 		kubeOptions.Namespace = defaultOptions.AppName
 	}
+
 	if helpers.IsBlank(kubeOptions.ingressOptions.Host) {
 		kubeOptions.ingressOptions.Host = fmt.Sprintf("%s.com", defaultOptions.AppName)
+	}
+
+	if kubeOptions.ingressOptions.TLS && !kubeOptions.ingressOptions.SelfSigned {
+		if helpers.IsBlank(kubeOptions.ingressOptions.CrtPath) {
+			panic("crt path does not exist")
+		}
+		if helpers.IsBlank(kubeOptions.ingressOptions.KeyPath) {
+			panic("key path does not exist")
+		}
 	}
 }

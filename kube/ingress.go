@@ -10,8 +10,11 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/guobinqiu/appdeployer/helpers"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -20,10 +23,14 @@ import (
 )
 
 type IngressOptions struct {
-	Name      string
-	Namespace string
-	Host      string
-	TLS       bool
+	Name            string
+	Namespace       string
+	Host            string
+	TLS             bool
+	SelfSigned      bool
+	SelfSignedYears int
+	CrtPath         string
+	KeyPath         string
 }
 
 func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions) error {
@@ -96,23 +103,40 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 }
 
 func CreateOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions) error {
-	cm := &CertificateManager{}
+	var tlsKeyBytes, tlsCertBytes []byte
 
-	// 创建CA证书和私钥
-	caCert, caPrivateKey, err := cm.CreateCACertificate()
-	if err != nil {
-		return fmt.Errorf("failed to create ca certificate: %v", err)
+	if opts.SelfSigned {
+		cm := &CertificateManager{}
+
+		// 创建CA证书和私钥
+		caCert, caPrivateKey, err := cm.CreateCACertificate(int(opts.SelfSignedYears))
+		if err != nil {
+			return fmt.Errorf("failed to create ca certificate: %v", err)
+		}
+
+		// 创建服务器证书和私钥
+		serverCertBytes, serverPrivateKey, err := cm.CreateServerCertificate(caCert, caPrivateKey, opts.Host)
+		if err != nil {
+			return fmt.Errorf("failed to create server certificate: %v", err)
+		}
+
+		// 将证书和私钥保存到文件（PEM格式）
+		tlsKeyBytes = cm.EncodePrivateKeyToPEM(serverPrivateKey)
+		tlsCertBytes = cm.EncodeCertificateToPEM(serverCertBytes)
+	} else {
+		tlsCert, err := os.ReadFile(helpers.ExpandUser(filepath.Clean(opts.CrtPath)))
+		if err != nil {
+			return fmt.Errorf("failed to read certificate file: %v", err)
+		}
+
+		tlsKey, err := os.ReadFile(helpers.ExpandUser(filepath.Clean(opts.KeyPath)))
+		if err != nil {
+			return fmt.Errorf("failed to read key file: %v", err)
+		}
+
+		tlsKeyBytes = tlsCert
+		tlsCertBytes = tlsKey
 	}
-
-	// 创建服务器证书和私钥
-	serverCertBytes, serverPrivateKey, err := cm.CreateServerCertificate(caCert, caPrivateKey, opts.Host)
-	if err != nil {
-		return fmt.Errorf("failed to create server certificate: %v", err)
-	}
-
-	// 将证书和私钥保存到文件（PEM格式）
-	tlsKeyBytes := cm.EncodePrivateKeyToPEM(serverPrivateKey)
-	tlsCertBytes := cm.EncodeCertificateToPEM(serverCertBytes)
 
 	tlsSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -120,8 +144,8 @@ func CreateOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Contex
 		},
 		Type: corev1.SecretTypeTLS,
 		Data: map[string][]byte{
-			"tls.key": tlsKeyBytes,
-			"tls.crt": tlsCertBytes,
+			corev1.TLSPrivateKeyKey: tlsKeyBytes,
+			corev1.TLSCertKey:       tlsCertBytes,
 		},
 	}
 
@@ -140,7 +164,7 @@ func CreateOrUpdateTlsSecret(clientset *kubernetes.Clientset, ctx context.Contex
 type CertificateManager struct{}
 
 // 创建一个CA
-func (cm *CertificateManager) CreateCACertificate() (*x509.Certificate, *rsa.PrivateKey, error) {
+func (cm *CertificateManager) CreateCACertificate(years int) (*x509.Certificate, *rsa.PrivateKey, error) {
 	// 生成私钥
 	caPrivateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -159,7 +183,7 @@ func (cm *CertificateManager) CreateCACertificate() (*x509.Certificate, *rsa.Pri
 			CommonName:         "",
 		},
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().AddDate(10, 0, 0), // 有效期10年
+		NotAfter:              time.Now().AddDate(years, 0, 0), // 有效期
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
 		BasicConstraintsValid: true,

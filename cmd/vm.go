@@ -38,8 +38,8 @@ func init() {
 	viper.SetDefault("ssh.port", 22)
 	viper.SetDefault("ssh.homedir", "~")
 	viper.SetDefault("ssh.authorized_keys_path", "/home/guobin/.ssh/authorized_keys")
-	viper.SetDefault("ssh.privatekey_path", "~/.ssh/authorized_keys/appdeployer")
-	viper.SetDefault("ssh.publickey_path", "~/.ssh/authorized_keys/appdeployer.pub")
+	viper.SetDefault("ssh.privatekey_path", "~/.ssh/appdeployer")
+	viper.SetDefault("ssh.publickey_path", "~/.ssh/appdeployer.pub")
 	viper.SetDefault("ansible.hosts", "localhost")
 	viper.SetDefault("ansible.installdir", "/home/guobin/workspace")
 

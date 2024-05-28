@@ -12,7 +12,7 @@ type Probe interface {
 type HttpGetProbe struct {
 	Path   string
 	Port   intstr.IntOrString
-	Schema corev1.URIScheme
+	Scheme corev1.URIScheme
 	ProbeParams
 }
 
@@ -22,7 +22,7 @@ func (probe HttpGetProbe) GetProbe() *corev1.Probe {
 			HTTPGet: &corev1.HTTPGetAction{
 				Path:   probe.Path,
 				Port:   probe.Port,
-				Scheme: probe.Schema,
+				Scheme: probe.Scheme,
 			},
 		},
 		InitialDelaySeconds: probe.InitialDelaySeconds,

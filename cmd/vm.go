@@ -39,17 +39,18 @@ var ansibleOptions AnsibleOptions
 func init() {
 	// set default values
 	viper.SetDefault("ssh.port", 22)
-	viper.SetDefault("ssh.homedir", os.Getenv("HOME"))
+	viper.SetDefault("ssh.homedir", "~")
 	viper.SetDefault("ssh.client_keyfilename", "appdeployer")
+
 	viper.SetDefault("ssh.server_authorized_keys_path", "~/.ssh/authorized_keys")
 	viper.SetDefault("ansible.hosts", "localhost")
-	viper.SetDefault("ansible.ansible_port", 22)
 	viper.SetDefault("ansible.ansible_ssh_private_key_file", "~/.ssh/appdeployer")
 	viper.SetDefault("ansible.installdir", "~/workspace")
 
 	//ssh
 	vmCmd.Flags().StringVar(&sshOptions.Username, "ssh.username", viper.GetString("ssh.username"), "Username for connecting to SSH server")
 	vmCmd.Flags().StringVar(&sshOptions.Password, "ssh.password", viper.GetString("ssh.password"), "Password for connecting to SSH server")
+	vmCmd.Flags().IntVar(&sshOptions.Port, "ssh.port", viper.GetInt("ssh.port"), "Port for connecting to SSH server")
 	vmCmd.Flags().StringVar(&sshOptions.HomeDir, "ssh.homedir", viper.GetString("ssh.homedir"), "User home directory on SSH server")
 	vmCmd.Flags().StringVar(&sshOptions.ClientKeyFileName, "ssh.client_keyfilename", viper.GetString("ssh.client_keyfilename"), "Name for SSH client key pair. Defaults to appdeployer")
 	vmCmd.Flags().StringVar(&sshOptions.ServerAuthorizedKeysPath, "ssh.server_authorized_keys_path", viper.GetString("ssh.server_authorized_keys_path"), "Path to SSH server authorized_keys storing SSH client public keys. Defaults to ~/.ssh/authorized_keys")
@@ -57,8 +58,6 @@ func init() {
 	//ansible
 	vmCmd.Flags().StringVar(&ansibleOptions.Hosts, "ansible.hosts", viper.GetString("ansible.hosts"), "Hosts on which the app will be deployed. Defaults to localhost.")
 	vmCmd.Flags().StringVar(&ansibleOptions.Role, "ansible.role", viper.GetString("ansible.role"), "Run ansible playbook by role for your app. Such as go, java and nodejs")
-	vmCmd.Flags().StringVar(&ansibleOptions.AnsibleUser, "ansible.ansible_user", viper.GetString("ansible.ansible_user"), "User on SSH server")
-	vmCmd.Flags().IntVar(&ansibleOptions.AnsiblePort, "ansible.ansible_port", viper.GetInt("ansible.ansible_port"), "Port for connecting to SSH server. Defaults to 22")
 	vmCmd.Flags().StringVar(&ansibleOptions.AnsibleSSHPrivateKeyFile, "ansible.ansible_ssh_private_key_file", viper.GetString("ansible.ansible_ssh_private_key_file"), "Private key of client_keyfilename. Defaults to ~/.ssh/appdeployer")
 	vmCmd.Flags().StringVar(&ansibleOptions.AnsibleBecomePassword, "ansible.ansible_become_password", viper.GetString("ansible.ansible_become_password"), "Run ansible playbook with sudo privileges")
 	vmCmd.Flags().StringVar(&ansibleOptions.InstallDir, "ansible.installdir", viper.GetString("ansible.installdir"), "Directory where the app will be installed. Defaults to ~/workspace")
@@ -96,6 +95,7 @@ func setSSHOptions() {
 
 func setAnsibleOptions() {
 	ansibleOptions.AnsibleUser = sshOptions.Username
+	ansibleOptions.AnsiblePort = sshOptions.Port
 
 	if helpers.IsBlank(ansibleOptions.Role) {
 		panic("ansible.role is required")
@@ -119,7 +119,7 @@ func setupAnsible() error {
 	for _, host := range hosts {
 		host = strings.TrimSpace(host)
 		keyManager := ansible.NewSSHKeyManager(
-			ansible.WithHomeDir(sshOptions.HomeDir),
+			ansible.WithHomeDir(helpers.ExpandUser(sshOptions.HomeDir)),
 			ansible.WithKeyFileName(sshOptions.ClientKeyFileName),
 		)
 		keyfile := helpers.ExpandUser(ansibleOptions.AnsibleSSHPrivateKeyFile)
@@ -132,7 +132,7 @@ func setupAnsible() error {
 				return fmt.Errorf("failed to generate and save SSH key pair: %v", err)
 			}
 		}
-		if err := keyManager.AddPublicKeyToRemote(host, ansibleOptions.AnsiblePort, sshOptions.Username, sshOptions.Password, sshOptions.ServerAuthorizedKeysPath); err != nil {
+		if err := keyManager.AddPublicKeyToRemote(host, sshOptions.Port, sshOptions.Username, sshOptions.Password, sshOptions.ServerAuthorizedKeysPath); err != nil {
 			return fmt.Errorf("failed to add public key to remote host %s: %v", host, err)
 		}
 	}

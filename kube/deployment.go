@@ -55,7 +55,7 @@ type LivenessProbe struct {
 	Type    string
 	Path    string
 	Port    string
-	Schema  string
+	Scheme  string
 	Command string
 	ProbeParams
 }
@@ -65,7 +65,7 @@ type ReadinessProbe struct {
 	Type    string
 	Path    string
 	Port    string
-	Schema  string
+	Scheme  string
 	Command string
 	ProbeParams
 }
@@ -315,7 +315,7 @@ func setLivenessProbe(container *corev1.Container, opts DeploymentOptions) error
 		probe = HttpGetProbe{
 			Path:   opts.LivenessProbe.Path,
 			Port:   intstr.FromInt32(opts.Port),
-			Schema: corev1.URIScheme(strings.ToUpper(opts.LivenessProbe.Schema)),
+			Scheme: corev1.URIScheme(strings.ToUpper(opts.LivenessProbe.Scheme)),
 		}
 	case ProbeTypeExec:
 		probe = ExecProbe{
@@ -345,7 +345,7 @@ func setReadinessProbe(container *corev1.Container, opts DeploymentOptions) erro
 		probe = HttpGetProbe{
 			Path:   opts.ReadinessProbe.Path,
 			Port:   intstr.FromInt32(opts.Port),
-			Schema: corev1.URIScheme(strings.ToUpper(opts.ReadinessProbe.Schema)),
+			Scheme: corev1.URIScheme(strings.ToUpper(opts.ReadinessProbe.Scheme)),
 		}
 	case ProbeTypeExec:
 		probe = ExecProbe{

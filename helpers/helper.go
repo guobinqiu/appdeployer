@@ -71,7 +71,7 @@ func WriteFile(path string, data []byte, perm os.FileMode) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	if err := os.WriteFile(path, []byte("Your content here"), perm); err != nil {
+	if err := os.WriteFile(path, data, perm); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
 

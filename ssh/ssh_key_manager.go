@@ -1,4 +1,4 @@
-package ansible
+package ssh
 
 import (
 	"crypto/rand"
@@ -7,26 +7,24 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
-	"os/user"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/guobinqiu/appdeployer/helpers"
 	"golang.org/x/crypto/ssh"
 )
 
 type SSHKeyManager struct {
-	HomeDir     string
-	KeyFileName string
-	KeyBitSize  int
+	KeyBitSize     int
+	PrivateKeyPath string
+	PublicKeyPath  string
 }
 
 func NewDefaultSSHKeyManager() *SSHKeyManager {
-	u, _ := user.Current()
 	return &SSHKeyManager{
-		HomeDir:     u.HomeDir,
-		KeyFileName: "deployer",
-		KeyBitSize:  2048,
+		KeyBitSize:     2048,
+		PrivateKeyPath: helpers.ExpandUser("~/.ssh/appdeployer"),
+		PublicKeyPath:  helpers.ExpandUser("~/.ssh/appdeployer.pub"),
 	}
 }
 
@@ -38,21 +36,21 @@ func NewSSHKeyManager(options ...func(*SSHKeyManager)) *SSHKeyManager {
 	return manager
 }
 
-func WithHomeDir(homeDir string) func(*SSHKeyManager) {
+func WithKeyBitSize(size int) func(*SSHKeyManager) {
 	return func(m *SSHKeyManager) {
-		m.HomeDir = homeDir
+		m.KeyBitSize = size
 	}
 }
 
-func WithKeyFileName(keyFileName string) func(*SSHKeyManager) {
+func WithPrivateKeyPath(path string) func(*SSHKeyManager) {
 	return func(m *SSHKeyManager) {
-		m.KeyFileName = keyFileName
+		m.PrivateKeyPath = path
 	}
 }
 
-func WithKeyBitSize(keyBitSize int) func(*SSHKeyManager) {
+func WithPublicKeyPath(path string) func(*SSHKeyManager) {
 	return func(m *SSHKeyManager) {
-		m.KeyBitSize = keyBitSize
+		m.PublicKeyPath = path
 	}
 }
 
@@ -89,7 +87,7 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 	}
 	defer conn.Close()
 
-	pubKey, err := os.ReadFile(filepath.Join(m.HomeDir, ".ssh", m.KeyFileName+".pub"))
+	pubKey, err := os.ReadFile(m.PublicKeyPath)
 	if err != nil {
 		return fmt.Errorf("failed to read the local public key file: %w", err)
 	}
@@ -116,26 +114,19 @@ func (m *SSHKeyManager) generateRSAKeyPair() (*rsa.PrivateKey, *rsa.PublicKey, e
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate private key: %w", err)
 	}
-
 	publicKey := &privateKey.PublicKey
 	return privateKey, publicKey, nil
 }
 
 func (m *SSHKeyManager) savePrivateKey(privateKey *rsa.PrivateKey) error {
-	sshDir := filepath.Join(m.HomeDir, ".ssh")
-	if _, err := os.Stat(sshDir); os.IsNotExist(err) {
-		if err := os.MkdirAll(sshDir, 0700); err != nil {
-			return fmt.Errorf("failed to create .ssh directory: %w", err)
-		}
-	}
-	privateKeyFile := filepath.Join(sshDir, m.KeyFileName)
 	privateKeyPEM := pem.EncodeToMemory(
 		&pem.Block{
 			Type:  "RSA PRIVATE KEY",
 			Bytes: x509.MarshalPKCS1PrivateKey(privateKey),
 		},
 	)
-	if err := os.WriteFile(privateKeyFile, privateKeyPEM, 0600); err != nil {
+
+	if err := helpers.WriteFile(m.PrivateKeyPath, privateKeyPEM, 0600); err != nil {
 		return fmt.Errorf("failed to write private key file: %w", err)
 	}
 
@@ -147,10 +138,9 @@ func (m *SSHKeyManager) savePublicKey(publicKey *rsa.PublicKey) error {
 	if err != nil {
 		return fmt.Errorf("failed to change public key from rsa to OpenSSH format: %w", err)
 	}
-	publicKeyBytes := ssh.MarshalAuthorizedKey(sshPublicKey)
 
-	publicKeyFile := filepath.Join(m.HomeDir, ".ssh", m.KeyFileName+".pub")
-	if err := os.WriteFile(publicKeyFile, publicKeyBytes, 0644); err != nil {
+	publicKeyBytes := ssh.MarshalAuthorizedKey(sshPublicKey)
+	if err := helpers.WriteFile(m.PublicKeyPath, publicKeyBytes, 0644); err != nil {
 		return fmt.Errorf("failed to write public key file in OpenSSH format: %w", err)
 	}
 

@@ -11,17 +11,6 @@ func IsBlank(s string) bool {
 	return len(strings.TrimSpace(s)) == 0
 }
 
-func GetDefaultKubeConfig() string {
-	if !IsBlank(os.Getenv("KUBECONFIG")) {
-		return os.Getenv("KUBECONFIG")
-	}
-	return filepath.Join(os.Getenv("HOME"), ".kube", "config")
-}
-
-func GetDefaultDockerConfig() string {
-	return filepath.Join(os.Getenv("HOME"), ".docker", "config.json")
-}
-
 func IsFileExist(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err != nil {
@@ -46,8 +35,8 @@ func IsDirExist(path string) (bool, error) {
 
 func ExpandUser(path string) string {
 	if len(path) > 0 && path[0] == '~' {
-		homeDir, _ := os.UserHomeDir()
-		return filepath.Join(homeDir, path[1:])
+		dir, _ := os.UserHomeDir()
+		return filepath.Join(dir, path[1:])
 	}
 	return path
 }
@@ -74,4 +63,17 @@ func Contains(arr []string, s string) bool {
 		}
 	}
 	return false
+}
+
+func WriteFile(path string, data []byte, perm os.FileMode) error {
+	dirPath := filepath.Dir(path)
+	if err := os.MkdirAll(dirPath, 0700); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	if err := os.WriteFile(path, []byte("Your content here"), perm); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
 }

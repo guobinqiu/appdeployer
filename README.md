@@ -25,7 +25,7 @@
 | username             | ssh用户名                                              | 是   |
 | password             | ssh用户密码                                            | 是   |
 | port                 | ssh端口                                                | 否   | 22                                |
-| authorized_keys_path | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 是   | /home/guobin/.ssh/authorized_keys |
+| authorized_keys_path | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 否   | /home/guobin/.ssh/authorized_keys |
 | privatekey_path      | ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer                |
 | publickey_path       | ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub            |
 

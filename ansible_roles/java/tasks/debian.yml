@@ -28,14 +28,14 @@
 
 - name: Download Tomcat9 Archive
   get_url:
-    url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.87/bin/apache-tomcat-9.0.87.tar.gz
-    dest: /tmp/apache-tomcat-9.0.87.tar.gz
+    url: https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.89/bin/apache-tomcat-9.0.89.tar.gz
+    dest: /tmp/apache-tomcat-9.0.89.tar.gz
     mode: 0644
   become: yes  
 
 - name: Unarchive Tomcat9
   unarchive:
-    src: /tmp/apache-tomcat-9.0.87.tar.gz
+    src: /tmp/apache-tomcat-9.0.89.tar.gz
     dest: /opt/tomcat
     remote_src: yes
     extra_opts: "--strip-components=1"

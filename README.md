@@ -113,8 +113,12 @@ go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiugu
 
 ### 发布到虚拟机集群
 
-执行命令会自动安装ansible控制机和受控机, 不同的集群环境可以给`--ansible.hosts`参数设置不同的主机列表,用逗号分隔
+安装ansible,不同的集群环境可以给`--ansible.hosts`参数设置不同的主机列表,用逗号分隔
 
 ```
 go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
+
+go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=java
+
+go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
 ```

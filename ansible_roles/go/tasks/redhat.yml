@@ -34,7 +34,7 @@
 - name: Unarchive Go
   unarchive:
     src: "/tmp/{{ go_version }}.src.tar.gz"
-    dest: "/tmp/"
+    dest: "/tmp/{{ go_version }}"
     remote_src: yes
     creates: "/tmp/{{ go_version }}/go"
   become: yes

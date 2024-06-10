@@ -1,111 +1,111 @@
-# 快速发布应用到kubernetes集群或者vm集群
+# Quick Deployment of Applications to Kubernetes or VM Clusters
 
-## 参数说明
+## Parameter Description
 
-### default 参数
+### Default Parameters
 
-| 参数名  | 参数描述         | 必填 | 默认值     |
-| ------- | ---------------- | ---- | ---------- |
-| appdir  | 本地项目目录路径 | 是   |
-| appname | 应用名称         | 否   | 项目目录名 |
+| Parameter | Description             | Required | Default Value  |
+| --------- | ----------------------- | -------- | -------------- |
+| appdir    | Local project directory | Yes      |
+| appname   | Application name        | No       | Directory name |
 
-### git参数
+### Git Parameters
 
-| 参数名   | 参数描述                                        | 必填               | 默认值 |
-| -------- | ----------------------------------------------- | ------------------ | ------ |
-| enabled  | 是否需要从git拉取项目到本地appdir指定的目录路径 | 否                 | false  |
-| repo     | 代码库名称                                      | enabled=true时必填 |
-| username | git用户名                                       | enabled=true时必填 |
-| password | git密码                                         | enabled=true时必填 |
+| Parameter | Description                                                        | Required     | Default Value |
+| --------- | ------------------------------------------------------------------ | ------------ | ------------- |
+| enabled   | Whether to pull the project from git to the specified local appdir | No           | false         |
+| repo      | Repository name                                                    | enabled=true |
+| username  | Git username                                                       | enabled=true |
+| password  | Git password                                                       | enabled=true |
 
-### ssh参数
+### SSH Parameters
 
-| 参数名               | 参数描述                                               | 必填 | 默认值                            |
-| -------------------- | ------------------------------------------------------ | ---- | --------------------------------- |
-| username             | ssh用户名                                              | 是   |
-| password             | ssh用户密码                                            | 是   |
-| port                 | ssh端口                                                | 否   | 22                                |
-| authorized_keys_path | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 否   | /home/guobin/.ssh/authorized_keys |
-| privatekey_path      | ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer                |
-| publickey_path       | ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub            |
+| Parameter            | Description                                        | Required | Default Value                     |
+| -------------------- | -------------------------------------------------- | -------- | --------------------------------- |
+| username             | SSH username                                       | Yes      |
+| password             | SSH user password                                  | Yes      |
+| port                 | SSH port                                           | No       | 22                                |
+| authorized_keys_path | Path to the authorized_keys file on the SSH server | No       | /home/guobin/.ssh/authorized_keys |
+| privatekey_path      | Path to the SSH client's private key file          | No       | ~/.ssh/appdeployer                |
+| publickey_path       | Path to the SSH client's public key file           | No       | ~/.ssh/appdeployer.pub            |
 
-### ansible参数
+### Ansible Parameters
 
-| 参数名          | 参数描述                 | 必填 | 默认值                                |
-| --------------- | ------------------------ | ---- | ------------------------------------- |
-| hosts           | 远程机列表               | 是   | localhost,多主机用逗号分隔,支持通配符 |
-| role            | 应用类型                 | 是   | 目前支持的类型:go,java,nodejs         |
-| become_password | 执行sudo的密码           | 是   |
-| installdir      | 应用在远程机上的安装目录 | 否   | /home/guobin/workspace                |
+| Parameter       | Description                               | Required | Default Value                                                      |
+| --------------- | ----------------------------------------- | -------- | ------------------------------------------------------------------ |
+| hosts           | List of remote machines                   | Yes      | localhost, separate multiple hosts with commas, supports wildcards |
+| role            | Application type                          | Yes      | Supported types: go, java, nodejs                                  |
+| become_password | Password for sudo execution               | Yes      |
+| installdir      | Installation directory on remote machines | No       | /home/guobin/workspace                                             |
 
-### docker参数
+### Docker Parameters
 
-| 参数名       | 参数描述                                                                                                                   | 必填 | 默认值                      |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------- | ---- | --------------------------- |
-| dockerconfig | Docker的配置文件路径,通常包含认证信息和Docker仓库的访问设置.这个文件在大多数情况下位于用户的家目录下的.docker/config.json. | 否   | ~/.docker/config.json       |
-| dockerfile   | Dockerfile的路径,Dockerfile是用于描述如何构建Docker镜像的文本文件.默认位于当前目录的根路径下.                              | 否   | ./Dockerfile                |
-| registry     | Docker仓库的URL,用于推送或拉取Docker镜像.默认是Docker Hub的官方仓库地址.                                                   | 否   | https://index.docker.io/v1/ |
-| username     | 用于访问Docker仓库的用户名.如果仓库需要认证,则此参数是必需的.                                                              | 是   |
-| password     | 与username对应的密码或访问令牌.如果仓库需要认证,则此参数是必需的                                                           | 是   |
-| repository   | Docker镜像的仓库名称,包括可能的命名空间（例如,username/repository）                                                        | 是   |
-| tag          | Docker镜像的标签,用于区分同一仓库中的不同版本或构建                                                                        | 否   | latest                      |
+| Parameter    | Description                                                                                                 | Required | Default Value               |
+| ------------ | ----------------------------------------------------------------------------------------------------------- | -------- | --------------------------- |
+| dockerconfig | Path to Docker's config file, usually located in the user's home directory under .docker/config.json        | No       | ~/.docker/config.json       |
+| dockerfile   | Path to the Dockerfile, which describes how to build the Docker image. Defaults to the root directory       | No       | ./Dockerfile                |
+| registry     | URL of the Docker registry for pushing or pulling Docker images. Defaults to Docker Hub's official registry | No       | https://index.docker.io/v1/ |
+| username     | Username for accessing the Docker registry. Required if the registry requires authentication                | Yes      |
+| password     | Password or access token corresponding to the username. Required if the registry requires authentication    | Yes      |
+| repository   | Name of the Docker image repository, including the namespace if applicable (e.g., username/repository)      | Yes      |
+| tag          | Tag of the Docker image to distinguish different versions or builds in the same repository                  | No       | latest                      |
 
-### kube参数
+### Kube Parameters
 
-| 参数名                                        | 参数描述                                                                                           | 必填  | 默认值            |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------- | ----- | ----------------- |
-| kubeconfig                                    | Kubernetes集群的配置文件路径,用于与集群进行交互.该文件包含了集群的访问权限和API服务器的地址等信息. | 否    | ~/.kube/config    |
-| namespace                                     | Kubernetes中的命名空间,用于隔离资源                                                                | 否    | 同default.appname |
-| ingress.host                                  | Ingress资源的域名或IP地址,用于访问服务                                                             | 否    | appName + ”.com“  |
-| ingress.tls                                   | 是否启用TLS加密.否                                                                                 | false |
-| ingress.selfsigned                            | 是否使用自签名证书                                                                                 | 否    | false             |
-| ingress.selfsignedyears                       | 自签名证书的有效年数                                                                               | 否    | 1                 |
-| ingress.crtpath                               | 自定义TLS证书的路径（.crt文件）                                                                    | 否    |
-| ingress.keypath                               | 自定义TLS密钥的路径（.key文件）                                                                    | 否    |
-| service.port                                  | Service暴露的端口号                                                                                | 否    | 8000              |
-| deployment.replicas	Deployment的副本数量      | 否                                                                                                 | 1     |
-| deployment.port                               | 容器内应用程序监听的端口号                                                                         | 否    | 8000              |
-| deployment.rollingupdate.maxsurge             | 滚动更新时,允许的最大额外副本数                                                                    | 否    | 1                 |
-| deployment.rollingUpdate.maxunavailable       | 滚动更新时,允许的最大不可用副本数                                                                  | 否    | 0                 |
-| deployment.quota.cpulimit                     | 容器CPU使用的限制                                                                                  | 否    | 1000m             |
-| deployment.quota.memlimit                     | 容器内存使用的限制                                                                                 | 否    | 512Mi             |
-| deployment.quota.cpurequest                   | 容器CPU使用的请求值                                                                                | 否    | 500m              |
-| deployment.quota.memrequest                   | 容器内存使用的请求值                                                                               | 否    | 256Mi             |
-| deployment.livenessprobe.enabled              | 是否启用存活探针                                                                                   | 否    | false             |
-| deployment.livenessprobe.type                 | 存活探针的类型(httpget,exec,tcpsocket),不区分大小写                                                | 否    | httpget           |
-| deployment.livenessprobe.path                 | 存活探针的HTTP路径                                                                                 | 否    | /                 |
-| deployment.livenessprobe.scheme               | 存活探针的HTTP模式(http,https),不区分大小写                                                        | 否    | http              |
-| deployment.livenessprobe.command              | 存活探针的命令（当type为exec时使用）                                                               | 否    |
-| deployment.livenessprobe.initialdelayseconds  | 存活探针的初始延迟秒数                                                                             | 否    | 0                 |
-| deployment.livenessprobe.timeoutseconds       | 存活探针的超时秒数                                                                                 | 否    | 1                 |
-| deployment.livenessprobe.periodseconds        | 存活探针的检查间隔秒数                                                                             | 否    | 10                |
-| deployment.livenessprobe.successthreshold     | 存活探针的成功阈值                                                                                 | 否    | 1                 |
-| deployment.livenessprobe.failurethreshold     | 存活探针的失败阈值                                                                                 | 否    | 3                 |
-| deployment.readinessprobe.enabled             | 是否启用就绪探针                                                                                   | 否    | false             |
-| deployment.readinessprobe.type                | 就绪探针的类型(httpget,exec,tcpsocket),不区分大小写                                                | 否    | httpget           |
-| deployment.readinessprobe.path                | 就绪探针的HTTP路径                                                                                 | 否    | /                 |
-| deployment.readinessprobe.scheme              | 就绪探针的HTTP模式(http,https),不区分大小写                                                        | 否    | http              |
-| deployment.readinessprobe.command             | 就绪探针的命令(当type为exec时使用)                                                                 | 否    |
-| deployment.readinessprobe.initialdelayseconds | 就绪探针的初始延迟秒数                                                                             | 否    | 0                 |
-| deployment.readinessprobe.timeoutseconds      | 就绪探针的超时秒数                                                                                 | 否    | 1                 |
-| deployment.readinessprobe.periodseconds       | 就绪探针的检查间隔秒数                                                                             | 否    | 10                |
-| deployment.readinessprobe.successthreshold    | 就绪探针的成功阈值                                                                                 | 否    | 1                 |
-| deployment.readinessprobe.failurethreshold    | 就绪探针的失败阈值                                                                                 | 否    | 3                 |
-| deployment.volumemount.enabled                | 是否启用卷挂载                                                                                     | 否    | false             |
-| deployment.volumemount.mountpath              | 卷挂载路径                                                                                         | 否    | /app/data         |
-| hpa.enabled                                   | 是否启用Horizontal Pod Autoscaler                                                                  | 否    | false             |
-| hpa.minreplicas                               | HPA缩小的最小Pod副本数                                                                             | 否    | 1                 |
-| hpa.maxreplicas                               | HPA扩展的最大Pod副本数                                                                             | 否    | 10                |
-| hpa.cpurate=50                                | HPA扩展Pod的CPU利用率阈值                                                                          | 否    | 50                |
-| pvc.accessmode                                | PVC的访问模式(readwriteonce,readonlymany,readwritemany),不区分大小写                               | 否    | readwriteonce     |
-| pvc.storageclassname                          | PVC所使用的StorageClass                                                                            | 否    | openebs-hostpath  |
-| pvc.storagesize                               | PVC请求的存储大小                                                                                  | 否    | 1G                |
+| Parameter                                     | Description                                                                        | Required | Default Value           |
+| --------------------------------------------- | ---------------------------------------------------------------------------------- | -------- | ----------------------- |
+| kubeconfig                                    | Path to the Kubernetes cluster config file, used for interacting with the cluster. | No       | ~/.kube/config          |
+| namespace                                     | Namespace in Kubernetes for resource isolation                                     | No       | Same as default.appname |
+| ingress.host                                  | Domain or IP address for the Ingress resource to access the service                | No       | appName + ".com"        |
+| ingress.tls                                   | Whether to enable TLS encryption                                                   | No       | false                   |
+| ingress.selfsigned                            | Whether to use a self-signed certificate                                           | No       | false                   |
+| ingress.selfsignedyears                       | Valid years for the self-signed certificate                                        | No       | 1                       |
+| ingress.crtpath                               | Path to the custom TLS certificate (.crt file)                                     | No       |
+| ingress.keypath                               | Path to the custom TLS key (.key file)                                             | No       |
+| service.port                                  | Port number exposed by the Service                                                 | No       | 8000                    |
+| deployment.replicas                           | Number of replicas in the Deployment                                               | No       | 1                       |
+| deployment.port                               | Port number the application listens to inside the container                        | No       | 8000                    |
+| deployment.rollingupdate.maxsurge             | Maximum number of additional replicas allowed during rolling updates               | No       | 1                       |
+| deployment.rollingUpdate.maxunavailable       | Maximum number of unavailable replicas during rolling updates                      | No       | 0                       |
+| deployment.quota.cpulimit                     | CPU limit for the container                                                        | No       | 1000m                   |
+| deployment.quota.memlimit                     | Memory limit for the container                                                     | No       | 512Mi                   |
+| deployment.quota.cpurequest                   | CPU request for the container                                                      | No       | 500m                    |
+| deployment.quota.memrequest                   | Memory request for the container                                                   | No       | 256Mi                   |
+| deployment.livenessprobe.enabled              | Whether to enable the liveness probe                                               | No       | false                   |
+| deployment.livenessprobe.type                 | Type of liveness probe (httpget, exec, tcpsocket), case insensitive                | No       | httpget                 |
+| deployment.livenessprobe.path                 | HTTP path for the liveness probe                                                   | No       | /                       |
+| deployment.livenessprobe.scheme               | HTTP scheme for the liveness probe (http, https), case insensitive                 | No       | http                    |
+| deployment.livenessprobe.command              | Command for the liveness probe (used when type is exec)                            | No       |
+| deployment.livenessprobe.initialdelayseconds  | Initial delay in seconds for the liveness probe                                    | No       | 0                       |
+| deployment.livenessprobe.timeoutseconds       | Timeout in seconds for the liveness probe                                          | No       | 1                       |
+| deployment.livenessprobe.periodseconds        | Check interval in seconds for the liveness probe                                   | No       | 10                      |
+| deployment.livenessprobe.successthreshold     | Success threshold for the liveness probe                                           | No       | 1                       |
+| deployment.livenessprobe.failurethreshold     | Failure threshold for the liveness probe                                           | No       | 3                       |
+| deployment.readinessprobe.enabled             | Whether to enable the readiness probe                                              | No       | false                   |
+| deployment.readinessprobe.type                | Type of readiness probe (httpget, exec, tcpsocket), case insensitive               | No       | httpget                 |
+| deployment.readinessprobe.path                | HTTP path for the readiness probe                                                  | No       | /                       |
+| deployment.readinessprobe.scheme              | HTTP scheme for the readiness probe (http, https), case insensitive                | No       | http                    |
+| deployment.readinessprobe.command             | Command for the readiness probe (used when type is exec)                           | No       |
+| deployment.readinessprobe.initialdelayseconds | Initial delay in seconds for the readiness probe                                   | No       | 0                       |
+| deployment.readinessprobe.timeoutseconds      | Timeout in seconds for the readiness probe                                         | No       | 1                       |
+| deployment.readinessprobe.periodseconds       | Check interval in seconds for the readiness probe                                  | No       | 10                      |
+| deployment.readinessprobe.successthreshold    | Success threshold for the readiness probe                                          | No       | 1                       |
+| deployment.readinessprobe.failurethreshold    | Failure threshold for the readiness probe                                          | No       | 3                       |
+| deployment.volumemount.enabled                | Whether to enable volume mount                                                     | No       | false                   |
+| deployment.volumemount.mountpath              | Volume mount path                                                                  | No       | /app/data               |
+| hpa.enabled                                   | Whether to enable Horizontal Pod Autoscaler                                        | No       | false                   |
+| hpa.minreplicas                               | Minimum number of Pod replicas to scale down to                                    | No       | 1                       |
+| hpa.maxreplicas                               | Maximum number of Pod replicas to scale up to                                      | No       | 10                      |
+| hpa.cpurate=50                                | CPU utilization threshold for scaling Pod                                          | No       | 50                      |
+| pvc.accessmode                                | Access mode for PVC (readwriteonce, readonlymany, readwritemany), case insensitive | No       | readwriteonce           |
+| pvc.storageclassname                          | StorageClass used by the PVC                                                       | No       | openebs-hostpath        |
+| pvc.storagesize                               | Requested storage size for the PVC                                                 | No       | 1G                      |
 
-## 用法
+## Usage
 
-### 发布到Kubernetes集群
+### Deploy to Kubernetes Cluster
 
-不同的集群环境可以给`--kube.kubeconfig`参数设置不同的kubeconfig文件, 目前镜像用的docker, 可以配置私有镜像
+Different cluster environments can set different kubeconfig files for the `--kube.kubeconfig` parameter. Currently, Docker images are used, and private registries can be configured.
 
 ```
 go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
@@ -113,16 +113,4 @@ go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiugu
 go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
 
 go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
-```
-
-### 发布到虚拟机集群
-
-安装ansible,不同的集群环境可以给`--ansible.hosts`参数设置不同的主机列表,用逗号分隔
-
-```
-go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
-
-go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=java
-
-go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
 ```

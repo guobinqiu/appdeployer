@@ -33,7 +33,7 @@
 - name: Rsync to install dir
   synchronize:
     src: "{{ app_dir }}"
-    dest: "{{ ansible_host }}:{{ app_install_dir }}"
+    dest: "{{ app_install_dir }}"
     mode: push
     rsync_opts:
       - "--exclude=.git"

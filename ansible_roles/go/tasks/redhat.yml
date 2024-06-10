@@ -25,6 +25,12 @@
     dest: /tmp
   become: yes
 
+- name: Ensure destination directory exists
+  file:
+    path: "/tmp/{{ go_version }}"
+    state: directory
+  become: yes
+
 - name: Unarchive Go
   unarchive:
     src: "/tmp/{{ go_version }}.src.tar.gz"
@@ -63,7 +69,7 @@
 - name: Rsync to install dir
   synchronize:
     src: "{{ app_dir }}"
-    dest: "{{ ansible_host }}:{{ app_install_dir }}"
+    dest: "{{ app_install_dir }}"
     mode: push
     rsync_opts:
       - "--exclude=.git"

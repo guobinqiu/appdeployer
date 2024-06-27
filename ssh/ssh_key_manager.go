@@ -192,7 +192,7 @@ func (m *SSHKeyManager) saveKnownHosts(hostname string, key ssh.PublicKey) error
 		return fmt.Errorf("failed to write public key file in OpenSSH format: %w", err)
 	}
 
-	fmt.Printf("SSH server's public key has been successfully added to the SSH client's %s file.", m.KnownHostsPath)
+	fmt.Printf("SSH server's public key has been successfully added to the SSH client's %s file.\n", m.KnownHostsPath)
 	return nil
 }
 

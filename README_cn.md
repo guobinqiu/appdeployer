@@ -28,6 +28,7 @@
 | authorized_keys_path | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 否   | ~/.ssh/authorized_keys |
 | privatekey_path      | ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer     |
 | publickey_path       | ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub |
+| knownhosts_path      | ssh客户端known_hosts文件路径                           | No   | ~/.ssh/known_hosts     |
 
 ### ansible参数
 

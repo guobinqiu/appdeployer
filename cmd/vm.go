@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/guobinqiu/appdeployer/helpers"
 	"github.com/guobinqiu/appdeployer/ssh"
@@ -21,6 +22,7 @@ type SSHOptions struct {
 	AuthorizedKeysPath string
 	PrivatekeyPath     string
 	PublickeyPath      string
+	KnownHostsPath     string
 }
 
 type AnsibleOptions struct {
@@ -37,25 +39,26 @@ func init() {
 	// set default values
 	viper.SetDefault("ssh.port", 22)
 	viper.SetDefault("ssh.homedir", "~")
-	viper.SetDefault("ssh.authorized_keys_path", "/home/guobin/.ssh/authorized_keys")
+	viper.SetDefault("ssh.authorized_keys_path", "~/.ssh/authorized_keys")
 	viper.SetDefault("ssh.privatekey_path", "~/.ssh/appdeployer")
 	viper.SetDefault("ssh.publickey_path", "~/.ssh/appdeployer.pub")
 	viper.SetDefault("ansible.hosts", "localhost")
-	viper.SetDefault("ansible.installdir", "/home/guobin/workspace")
+	viper.SetDefault("ansible.installdir", "~/workspace")
 
 	//ssh
 	vmCmd.Flags().StringVar(&sshOptions.Username, "ssh.username", viper.GetString("ssh.username"), "Username for connecting to SSH server")
 	vmCmd.Flags().StringVar(&sshOptions.Password, "ssh.password", viper.GetString("ssh.password"), "Password for connecting to SSH server")
 	vmCmd.Flags().IntVar(&sshOptions.Port, "ssh.port", viper.GetInt("ssh.port"), "Port for connecting to SSH server")
-	vmCmd.Flags().StringVar(&sshOptions.AuthorizedKeysPath, "ssh.authorized_keys_path", viper.GetString("ssh.authorized_keys_path"), "Path to SSH server authorized_keys storing SSH client public keys. Defaults to /home/guobin/.ssh/authorized_keys")
-	vmCmd.Flags().StringVar(&sshOptions.PrivatekeyPath, "ssh.privatekey_path", viper.GetString("ssh.privatekey_path"), "Path to SSH client private key")
-	vmCmd.Flags().StringVar(&sshOptions.PublickeyPath, "ssh.publickey_path", viper.GetString("ssh.publickey_path"), "Path to SSH client public key")
+	vmCmd.Flags().StringVar(&sshOptions.AuthorizedKeysPath, "ssh.authorized_keys_path", viper.GetString("ssh.authorized_keys_path"), "Path to SSH server authorized_keys file storing SSH client's public keys. Defaults to ~/.ssh/authorized_keys")
+	vmCmd.Flags().StringVar(&sshOptions.PrivatekeyPath, "ssh.privatekey_path", viper.GetString("ssh.privatekey_path"), "Path to SSH client private key file")
+	vmCmd.Flags().StringVar(&sshOptions.PublickeyPath, "ssh.publickey_path", viper.GetString("ssh.publickey_path"), "Path to SSH client public key file")
+	vmCmd.Flags().StringVar(&sshOptions.KnownHostsPath, "ssh.knownhosts_path", viper.GetString("ssh.knownhosts_path"), "Path to SSH client known_hosts file storing SSH server's public keys. Defaults to ~/.ssh/known_hosts")
 
 	//ansible
 	vmCmd.Flags().StringVar(&ansibleOptions.Hosts, "ansible.hosts", viper.GetString("ansible.hosts"), "Hosts on which the app will be deployed. Defaults to localhost.")
 	vmCmd.Flags().StringVar(&ansibleOptions.Role, "ansible.role", viper.GetString("ansible.role"), "Run ansible playbook by role for your app. Such as go, java and nodejs")
 	vmCmd.Flags().StringVar(&ansibleOptions.BecomePassword, "ansible.become_password", viper.GetString("ansible.become_password"), "Run ansible playbook with sudo privileges")
-	vmCmd.Flags().StringVar(&ansibleOptions.InstallDir, "ansible.installdir", viper.GetString("ansible.installdir"), "Directory where the app will be installed. Defaults to /home/guobin/workspace")
+	vmCmd.Flags().StringVar(&ansibleOptions.InstallDir, "ansible.installdir", viper.GetString("ansible.installdir"), "Directory where the app will be installed. Defaults to ~/workspace")
 }
 
 var vmCmd = &cobra.Command{
@@ -108,8 +111,7 @@ func setAnsibleOptions() {
 
 func setupAnsible() error {
 	keyManager := ssh.NewSSHKeyManager(
-		ssh.WithPrivateKeyPath(helpers.ExpandUser(sshOptions.PrivatekeyPath)),
-		ssh.WithPublicKeyPath(helpers.ExpandUser(sshOptions.PublickeyPath)),
+		ssh.WithTimeout(10 * time.Second),
 	)
 	hosts := strings.Split(ansibleOptions.Hosts, ",")
 	for _, host := range hosts {

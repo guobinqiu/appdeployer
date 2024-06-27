@@ -20,14 +20,14 @@
 
 ### ssh参数
 
-| 参数名               | 参数描述                                               | 必填 | 默认值                            |
-| -------------------- | ------------------------------------------------------ | ---- | --------------------------------- |
+| 参数名               | 参数描述                                               | 必填 | 默认值                 |
+| -------------------- | ------------------------------------------------------ | ---- | ---------------------- |
 | username             | ssh用户名                                              | 是   |
 | password             | ssh用户密码                                            | 是   |
-| port                 | ssh端口                                                | 否   | 22                                |
-| authorized_keys_path | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 否   | /home/guobin/.ssh/authorized_keys |
-| privatekey_path      | ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer                |
-| publickey_path       | ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub            |
+| port                 | ssh端口                                                | 否   | 22                     |
+| authorized_keys_path | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 否   | ~/.ssh/authorized_keys |
+| privatekey_path      | ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer     |
+| publickey_path       | ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub |
 
 ### ansible参数
 
@@ -36,7 +36,7 @@
 | hosts           | 远程机列表               | 是   | localhost,多主机用逗号分隔,支持通配符 |
 | role            | 应用类型                 | 是   | 目前支持的类型:go,java,nodejs         |
 | become_password | 执行sudo的密码           | 是   |
-| installdir      | 应用在远程机上的安装目录 | 否   | /home/guobin/workspace                |
+| installdir      | 应用在远程机上的安装目录 | 否   | ~/workspace                           |
 
 ### docker参数
 

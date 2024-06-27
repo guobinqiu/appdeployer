@@ -20,14 +20,14 @@
 
 ### SSH Parameters
 
-| Parameter            | Description                                        | Required | Default Value                     |
-| -------------------- | -------------------------------------------------- | -------- | --------------------------------- |
+| Parameter            | Description                                        | Required | Default Value          |
+| -------------------- | -------------------------------------------------- | -------- | ---------------------- |
 | username             | SSH username                                       | Yes      |
 | password             | SSH user password                                  | Yes      |
-| port                 | SSH port                                           | No       | 22                                |
-| authorized_keys_path | Path to the authorized_keys file on the SSH server | No       | /home/guobin/.ssh/authorized_keys |
-| privatekey_path      | Path to the SSH client's private key file          | No       | ~/.ssh/appdeployer                |
-| publickey_path       | Path to the SSH client's public key file           | No       | ~/.ssh/appdeployer.pub            |
+| port                 | SSH port                                           | No       | 22                     |
+| authorized_keys_path | Path to the authorized_keys file on the SSH server | No       | ~/.ssh/authorized_keys |
+| privatekey_path      | Path to the SSH client's private key file          | No       | ~/.ssh/appdeployer     |
+| publickey_path       | Path to the SSH client's public key file           | No       | ~/.ssh/appdeployer.pub |
 
 ### Ansible Parameters
 
@@ -36,7 +36,7 @@
 | hosts           | List of remote machines                   | Yes      | localhost, separate multiple hosts with commas, supports wildcards |
 | role            | Application type                          | Yes      | Supported types: go, java, nodejs                                  |
 | become_password | Password for sudo execution               | Yes      |
-| installdir      | Installation directory on remote machines | No       | /home/guobin/workspace                                             |
+| installdir      | Installation directory on remote machines | No       | ~/workspace                                                        |
 
 ### Docker Parameters
 

@@ -107,11 +107,11 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 				if os.IsNotExist(err) || err == errNoHostMatched {
 					confirmed := m.promptUserToConfirmFingerprint(hostname, key)
 					if confirmed {
-						m.saveKnownHosts(hostname, key)
+						return m.saveKnownHosts(hostname, key)
 					}
-				} else {
-					return err
+					return errNoHostMatched
 				}
+				return err
 			}
 			if ssh.FingerprintSHA256(key) != ssh.FingerprintSHA256(hostKey) {
 				return errors.New("host key does not match the expected value")
@@ -192,6 +192,7 @@ func (m *SSHKeyManager) saveKnownHosts(hostname string, key ssh.PublicKey) error
 		return fmt.Errorf("failed to write public key file in OpenSSH format: %w", err)
 	}
 
+	fmt.Printf("SSH server's public key has been successfully added to the SSH client's %s file.", m.KnownHostsPath)
 	return nil
 }
 
@@ -200,7 +201,7 @@ func (m *SSHKeyManager) getHostKey(knownHostsPath string, host string) (ssh.Publ
 
 	file, err := os.Open(knownHostsPath)
 	if err != nil {
-		return nil, fmt.Errorf("error opening file: %w", err)
+		return nil, err
 	}
 	defer file.Close()
 
@@ -241,7 +242,7 @@ func (m *SSHKeyManager) promptUserToConfirmFingerprint(host string, pubKey ssh.P
 	var userInput string
 	_, err := fmt.Scanln(&userInput)
 	if err != nil {
-		userInput = "yes"
+		userInput = "no"
 	}
 
 	userInput = strings.TrimSpace(strings.ToLower(userInput))

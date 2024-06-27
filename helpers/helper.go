@@ -77,3 +77,22 @@ func WriteFile(path string, data []byte, perm os.FileMode) error {
 
 	return nil
 }
+
+func AppendFile(path string, data []byte, perm os.FileMode) error {
+	dirPath := filepath.Dir(path)
+	if err := os.MkdirAll(dirPath, 0700); err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, perm)
+	if err != nil {
+		return fmt.Errorf("failed to open file for appending: %w", err)
+	}
+	defer file.Close()
+
+	if _, err := file.Write(data); err != nil {
+		return fmt.Errorf("failed to write data: %w", err)
+	}
+
+	return nil
+}

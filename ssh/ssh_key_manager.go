@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -24,6 +26,8 @@ type SSHKeyManager struct {
 	KnownHostsPath string
 	Timeout        time.Duration
 }
+
+var errNoHostMatched = errors.New("no hosts matched")
 
 func NewDefaultSSHKeyManager() *SSHKeyManager {
 	return &SSHKeyManager{
@@ -91,11 +95,6 @@ func (m *SSHKeyManager) GenerateAndSaveKeyPair() error {
 }
 
 func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username string, password string, remoteAuthorizedKeysPath string) error {
-	hostKey, err := m.getHostKey(m.KnownHostsPath, host)
-	if err != nil {
-		return fmt.Errorf("failed to get server public key from known_hosts: %w", err)
-	}
-
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
@@ -103,8 +102,19 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 		},
 		Timeout: m.Timeout,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			hostKey, err := m.getHostKey(m.KnownHostsPath, hostname)
+			if err != nil {
+				if os.IsNotExist(err) || err == errNoHostMatched {
+					confirmed := m.promptUserToConfirmFingerprint(hostname, key)
+					if confirmed {
+						m.saveKnownHosts(hostname, key)
+					}
+				} else {
+					return err
+				}
+			}
 			if ssh.FingerprintSHA256(key) != ssh.FingerprintSHA256(hostKey) {
-				return fmt.Errorf("host key does not match the expected value")
+				return errors.New("host key does not match the expected value")
 			}
 			return nil
 		},
@@ -176,6 +186,15 @@ func (m *SSHKeyManager) savePublicKey(publicKey *rsa.PublicKey) error {
 	return nil
 }
 
+func (m *SSHKeyManager) saveKnownHosts(hostname string, key ssh.PublicKey) error {
+	data := []byte(fmt.Sprintf("%s %s\n", hostname, ssh.MarshalAuthorizedKey(key)))
+	if err := helpers.AppendFile(m.KnownHostsPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write public key file in OpenSSH format: %w", err)
+	}
+
+	return nil
+}
+
 func (m *SSHKeyManager) getHostKey(knownHostsPath string, host string) (ssh.PublicKey, error) {
 	var publicKey ssh.PublicKey
 
@@ -209,5 +228,22 @@ func (m *SSHKeyManager) getHostKey(knownHostsPath string, host string) (ssh.Publ
 		}
 	}
 
-	return nil, fmt.Errorf("no hosts matched")
+	return nil, errNoHostMatched
+}
+
+func (m *SSHKeyManager) promptUserToConfirmFingerprint(host string, pubKey ssh.PublicKey) bool {
+	fingerprint := fmt.Sprintf("%x", sha256.Sum256(pubKey.Marshal()))
+
+	fmt.Printf("The authenticity of host '%s' can't be established.\n", host)
+	fmt.Printf("RSA key fingerprint is %s.\n", fingerprint)
+	fmt.Print("Are you sure you want to continue connecting (yes/no)? ")
+
+	var userInput string
+	_, err := fmt.Scanln(&userInput)
+	if err != nil {
+		userInput = "yes"
+	}
+
+	userInput = strings.TrimSpace(strings.ToLower(userInput))
+	return userInput == "yes" || userInput == "y"
 }

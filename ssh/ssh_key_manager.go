@@ -20,22 +20,24 @@ import (
 )
 
 type SSHKeyManager struct {
-	KeyBitSize     int
-	PrivateKeyPath string
-	PublicKeyPath  string
-	KnownHostsPath string
-	Timeout        time.Duration
+	KeyBitSize            int
+	PrivateKeyPath        string
+	PublicKeyPath         string
+	KnownHostsPath        string
+	Timeout               time.Duration
+	StrictHostKeyChecking bool
 }
 
 var errNoHostMatched = errors.New("no hosts matched")
 
 func NewDefaultSSHKeyManager() *SSHKeyManager {
 	return &SSHKeyManager{
-		KeyBitSize:     2048,
-		PrivateKeyPath: helpers.ExpandUser("~/.ssh/appdeployer"),
-		PublicKeyPath:  helpers.ExpandUser("~/.ssh/appdeployer.pub"),
-		KnownHostsPath: helpers.ExpandUser("~/.ssh/known_hosts"),
-		Timeout:        0,
+		KeyBitSize:            2048,
+		PrivateKeyPath:        helpers.ExpandUser("~/.ssh/appdeployer"),
+		PublicKeyPath:         helpers.ExpandUser("~/.ssh/appdeployer.pub"),
+		KnownHostsPath:        helpers.ExpandUser("~/.ssh/known_hosts"),
+		Timeout:               0,
+		StrictHostKeyChecking: true,
 	}
 }
 
@@ -77,6 +79,12 @@ func WithTimeout(timeout time.Duration) func(*SSHKeyManager) {
 	}
 }
 
+func WithStrictHostKeyChecking(strictHostKeyChecking bool) func(*SSHKeyManager) {
+	return func(m *SSHKeyManager) {
+		m.StrictHostKeyChecking = strictHostKeyChecking
+	}
+}
+
 func (m *SSHKeyManager) GenerateAndSaveKeyPair() error {
 	privateKey, publicKey, err := m.generateRSAKeyPair()
 	if err != nil {
@@ -102,6 +110,9 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 		},
 		Timeout: m.Timeout,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
+			if m.StrictHostKeyChecking {
+				return nil
+			}
 			hostKey, err := m.getHostKey(m.KnownHostsPath, hostname)
 			if err != nil {
 				if os.IsNotExist(err) || err == errNoHostMatched {
@@ -138,7 +149,6 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 	}
 	defer session.Close()
 
-	//TODO: 这里需要去重
 	cmd := fmt.Sprintf("grep -qxF '%s' %s || echo '%s' >> %s", pubKeyStr, remoteAuthorizedKeysPath, pubKeyStr, remoteAuthorizedKeysPath)
 	if err := session.Run(cmd); err != nil {
 		return fmt.Errorf("failed to add the public key to the remote server's authorized_keys file: %w", err)

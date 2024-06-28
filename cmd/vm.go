@@ -16,13 +16,14 @@ import (
 )
 
 type SSHOptions struct {
-	Username           string
-	Password           string
-	Port               int
-	AuthorizedKeysPath string
-	PrivatekeyPath     string
-	PublickeyPath      string
-	KnownHostsPath     string
+	Username              string
+	Password              string
+	Port                  int
+	AuthorizedKeysPath    string
+	PrivatekeyPath        string
+	PublickeyPath         string
+	KnownHostsPath        string
+	StrictHostKeyChecking bool
 }
 
 type AnsibleOptions struct {
@@ -42,6 +43,8 @@ func init() {
 	viper.SetDefault("ssh.authorized_keys_path", "~/.ssh/authorized_keys")
 	viper.SetDefault("ssh.privatekey_path", "~/.ssh/appdeployer")
 	viper.SetDefault("ssh.publickey_path", "~/.ssh/appdeployer.pub")
+	viper.SetDefault("ssh.knownhosts_path", "~/.ssh/known_hosts")
+	viper.SetDefault("ssh.stricthostkeychecking", true)
 	viper.SetDefault("ansible.hosts", "localhost")
 	viper.SetDefault("ansible.installdir", "~/workspace")
 
@@ -53,6 +56,7 @@ func init() {
 	vmCmd.Flags().StringVar(&sshOptions.PrivatekeyPath, "ssh.privatekey_path", viper.GetString("ssh.privatekey_path"), "Path to SSH client private key file")
 	vmCmd.Flags().StringVar(&sshOptions.PublickeyPath, "ssh.publickey_path", viper.GetString("ssh.publickey_path"), "Path to SSH client public key file")
 	vmCmd.Flags().StringVar(&sshOptions.KnownHostsPath, "ssh.knownhosts_path", viper.GetString("ssh.knownhosts_path"), "Path to SSH client known_hosts file storing SSH server's public keys. Defaults to ~/.ssh/known_hosts")
+	vmCmd.Flags().BoolVar(&sshOptions.StrictHostKeyChecking, "ssh.stricthostkeychecking", viper.GetBool("ssh.stricthostkeychecking"), "Whether or not to skip the confirmation of the SSH server's public key. Defaults to true")
 
 	//ansible
 	vmCmd.Flags().StringVar(&ansibleOptions.Hosts, "ansible.hosts", viper.GetString("ansible.hosts"), "Hosts on which the app will be deployed. Defaults to localhost.")
@@ -111,7 +115,11 @@ func setAnsibleOptions() {
 
 func setupAnsible() error {
 	keyManager := ssh.NewSSHKeyManager(
-		ssh.WithTimeout(10 * time.Second),
+		ssh.WithPrivateKeyPath(sshOptions.PrivatekeyPath),
+		ssh.WithPublicKeyPath(sshOptions.PublickeyPath),
+		ssh.WithKnownHostsPath(sshOptions.KnownHostsPath),
+		ssh.WithTimeout(10*time.Second),
+		ssh.WithStrictHostKeyChecking(sshOptions.StrictHostKeyChecking),
 	)
 	hosts := strings.Split(ansibleOptions.Hosts, ",")
 	for _, host := range hosts {

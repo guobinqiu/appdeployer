@@ -20,15 +20,16 @@
 
 ### ssh参数
 
-| 参数名               | 参数描述                                               | 必填 | 默认值                 |
-| -------------------- | ------------------------------------------------------ | ---- | ---------------------- |
-| username             | ssh用户名                                              | 是   |
-| password             | ssh用户密码                                            | 是   |
-| port                 | ssh端口                                                | 否   | 22                     |
-| authorized_keys_path | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 否   | ~/.ssh/authorized_keys |
-| privatekey_path      | ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer     |
-| publickey_path       | ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub |
-| knownhosts_path      | ssh客户端known_hosts文件路径                           | No   | ~/.ssh/known_hosts     |
+| 参数名                | 参数描述                                               | 必填 | 默认值                 |
+| --------------------- | ------------------------------------------------------ | ---- | ---------------------- |
+| username              | ssh用户名                                              | 是   |
+| password              | ssh用户密码                                            | 是   |
+| port                  | ssh端口                                                | 否   | 22                     |
+| authorized_keys_path  | ssh服务端authorized_keys文件路径,用于存储ssh客户端公钥 | 否   | ~/.ssh/authorized_keys |
+| privatekey_path       | ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer     |
+| publickey_path        | ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub |
+| knownhosts_path       | ssh客户端known_hosts文件路径                           | No   | ~/.ssh/known_hosts     |
+| stricthostkeychecking | ssh客户端在接受连接前对服务端公钥进行验证              | No   | true                   |
 
 ### ansible参数
 

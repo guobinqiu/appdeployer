@@ -20,15 +20,16 @@
 
 ### SSH Parameters
 
-| Parameter            | Description                                        | Required | Default Value          |
-| -------------------- | -------------------------------------------------- | -------- | ---------------------- |
-| username             | SSH username                                       | Yes      |
-| password             | SSH user password                                  | Yes      |
-| port                 | SSH port                                           | No       | 22                     |
-| authorized_keys_path | Path to the authorized_keys file on the SSH server | No       | ~/.ssh/authorized_keys |
-| privatekey_path      | Path to the SSH client's private key file          | No       | ~/.ssh/appdeployer     |
-| publickey_path       | Path to the SSH client's public key file           | No       | ~/.ssh/appdeployer.pub |
-| knownhosts_path      | Path to the SSH client's known_hosts file          | No       | ~/.ssh/known_hosts     |
+| Parameter             | Description                                                                  | Required | Default Value          |
+| --------------------- | ---------------------------------------------------------------------------- | -------- | ---------------------- |
+| username              | SSH username                                                                 | Yes      |
+| password              | SSH user password                                                            | Yes      |
+| port                  | SSH port                                                                     | No       | 22                     |
+| authorized_keys_path  | Path to the authorized_keys file on the SSH server                           | No       | ~/.ssh/authorized_keys |
+| privatekey_path       | Path to the SSH client's private key file                                    | No       | ~/.ssh/appdeployer     |
+| publickey_path        | Path to the SSH client's public key file                                     | No       | ~/.ssh/appdeployer.pub |
+| knownhosts_path       | Path to the SSH client's known_hosts file                                    | No       | ~/.ssh/known_hosts     |
+| stricthostkeychecking | SSH client verifies the server's public key before establishing a connection | No       | true                   |
 
 ### Ansible Parameters
 

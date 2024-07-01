@@ -28,7 +28,10 @@ type SSHKeyManager struct {
 	StrictHostKeyChecking bool
 }
 
-var errNoHostMatched = errors.New("no hosts matched")
+var (
+	errNoHostMatched    = errors.New("no hosts matched")
+	errNoHostKeyMatched = errors.New("host key does not match the expected value")
+)
 
 func NewDefaultSSHKeyManager() *SSHKeyManager {
 	return &SSHKeyManager{
@@ -57,19 +60,19 @@ func WithKeyBitSize(size int) func(*SSHKeyManager) {
 
 func WithPrivateKeyPath(path string) func(*SSHKeyManager) {
 	return func(m *SSHKeyManager) {
-		m.PrivateKeyPath = path
+		m.PrivateKeyPath = helpers.ExpandUser(path)
 	}
 }
 
 func WithPublicKeyPath(path string) func(*SSHKeyManager) {
 	return func(m *SSHKeyManager) {
-		m.PublicKeyPath = path
+		m.PublicKeyPath = helpers.ExpandUser(path)
 	}
 }
 
 func WithKnownHostsPath(path string) func(*SSHKeyManager) {
 	return func(m *SSHKeyManager) {
-		m.KnownHostsPath = path
+		m.KnownHostsPath = helpers.ExpandUser(path)
 	}
 }
 
@@ -110,7 +113,7 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 		},
 		Timeout: m.Timeout,
 		HostKeyCallback: func(hostname string, remote net.Addr, key ssh.PublicKey) error {
-			if m.StrictHostKeyChecking {
+			if !m.StrictHostKeyChecking {
 				return nil
 			}
 			hostKey, err := m.getHostKey(m.KnownHostsPath, hostname)
@@ -120,12 +123,12 @@ func (m *SSHKeyManager) AddPublicKeyToRemote(host string, port int, username str
 					if confirmed {
 						return m.saveKnownHosts(hostname, key)
 					}
-					return errNoHostMatched
+					return err
 				}
 				return err
 			}
 			if ssh.FingerprintSHA256(key) != ssh.FingerprintSHA256(hostKey) {
-				return errors.New("host key does not match the expected value")
+				return errNoHostKeyMatched
 			}
 			return nil
 		},
@@ -212,6 +215,7 @@ func (m *SSHKeyManager) getHostKey(knownHostsPath string, host string) (ssh.Publ
 
 	file, err := os.Open(knownHostsPath)
 	if err != nil {
+		fmt.Println("aaaa")
 		return nil, err
 	}
 	defer file.Close()

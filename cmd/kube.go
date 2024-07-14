@@ -14,13 +14,13 @@ import (
 )
 
 type KubeOptions struct {
-	Kubeconfig        string
-	Namespace         string
-	ingressOptions    kube.IngressOptions
-	serviceOptions    kube.ServiceOptions
-	deploymentOptions kube.DeploymentOptions
-	hpaOptions        kube.HPAOptions
-	pvcOptions        kube.PVCOptions
+	Kubeconfig        string                 `form:"kubeconfig" json:"kubeconfig"`
+	Namespace         string                 `form:"namespace" json:"namespace"`
+	ingressOptions    kube.IngressOptions    `form:"ingress" json:"ingress"`
+	serviceOptions    kube.ServiceOptions    `form:"service" json:"service"`
+	deploymentOptions kube.DeploymentOptions `form:"deployment" json:"deployment"`
+	hpaOptions        kube.HPAOptions        `form:"hpa" json:"hpa"`
+	pvcOptions        kube.PVCOptions        `form:"pvc" json:"pvc"`
 }
 
 var dockerOptions docker.DockerOptions

@@ -21,14 +21,14 @@ import (
 const DOCKERHUB = "https://index.docker.io/v1/"
 
 type DockerOptions struct {
-	AppDir       string
-	Dockerfile   string
-	Dockerconfig string
-	Registry     string
-	Username     string
-	Password     string
-	Repository   string
-	Tag          string
+	AppDir       string `form:"appdir" json:"appdir"`
+	Dockerfile   string `form:"dockerfile" json:"dockerfile"`
+	Dockerconfig string `form:"dockerconfig" json:"dockerconfig"`
+	Registry     string `form:"registry" json:"registry"`
+	Username     string `form:"username" json:"username"`
+	Password     string `form:"password" json:"password"`
+	Repository   string `form:"repository" json:"repository"`
+	Tag          string `form:"tag" json:"tag"`
 }
 
 func (opts DockerOptions) Validate() error {

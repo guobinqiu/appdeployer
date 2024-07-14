@@ -25,62 +25,62 @@ const (
 
 // DeploymentOptions 用于配置 Deployment 创建或更新的选项
 type DeploymentOptions struct {
-	Name           string
+	Name           string `form:"name" json:"name"`
 	Namespace      string
-	Replicas       int32
+	Replicas       int32 `form:"replicas" json:"replicas"`
 	Image          string
-	Port           int32
-	RollingUpdate  RollingUpdate
-	Quota          Quota
-	EnvVars        []string
-	LivenessProbe  LivenessProbe
-	ReadinessProbe ReadinessProbe
-	VolumeMount    VolumeMount
+	Port           int32          `form:"port" json:"port"`
+	RollingUpdate  RollingUpdate  `form:"rollingupdate" json:"rollingupdate"`
+	Quota          Quota          `form:"quota" json:"quota"`
+	EnvVars        []string       `form:"envs" json:"envs"`
+	LivenessProbe  LivenessProbe  `form:"livenessprobe" json:"livenessprobe"`
+	ReadinessProbe ReadinessProbe `form:"readinessprobe" json:"readinessprobe"`
+	VolumeMount    VolumeMount    `form:"volumemount" json:"volumemount"`
 }
 
 type RollingUpdate struct {
-	MaxSurge       string
-	MaxUnavailable string
+	MaxSurge       string `form:"maxsurge" json:"maxsurge"`
+	MaxUnavailable string `form:"maxunavailable" json:"maxunavailable"`
 }
 
 type Quota struct {
-	CPURequest string
-	CPULimit   string
-	MemRequest string
-	MemLimit   string
+	CPURequest string `form:"cpurequst" json:"cpurequst"`
+	CPULimit   string `form:"cpulimit" json:"cpulimit"`
+	MemRequest string `form:"memrequest" json:"memrequest"`
+	MemLimit   string `form:"memlimit" json:"memlimit"`
 }
 
 type LivenessProbe struct {
-	Enabled bool
-	Type    string
-	Path    string
+	Enabled bool   `form:"enabled" json:"enabled"`
+	Type    string `form:"type" json:"type"`
+	Path    string `form:"path" json:"path"`
 	Port    string
-	Scheme  string
-	Command string
+	Scheme  string `form:"scheme" json:"scheme"`
+	Command string `form:"command" json:"command"`
 	ProbeParams
 }
 
 type ReadinessProbe struct {
-	Enabled bool
-	Type    string
-	Path    string
+	Enabled bool   `form:"enabled" json:"enabled"`
+	Type    string `form:"type" json:"type"`
+	Path    string `form:"path" json:"path"`
 	Port    string
-	Scheme  string
-	Command string
+	Scheme  string `form:"scheme" json:"scheme"`
+	Command string `form:"command" json:"command"`
 	ProbeParams
 }
 
 type ProbeParams struct {
-	InitialDelaySeconds int32
-	TimeoutSeconds      int32
-	PeriodSeconds       int32
-	SuccessThreshold    int32
-	FailureThreshold    int32
+	InitialDelaySeconds int32 `form:"initialdelayseconds" json:"initialdelayseconds"`
+	TimeoutSeconds      int32 `form:"timeoutseconds" json:"timeoutseconds"`
+	PeriodSeconds       int32 `form:"periodseconds" json:"periodseconds"`
+	SuccessThreshold    int32 `form:"successthreshold" json:"successthreshold"`
+	FailureThreshold    int32 `form:"failurethreshold" json:"failurethreshold"`
 }
 
 type VolumeMount struct {
-	Enabled   bool
-	MountPath string
+	Enabled   bool   `form:"enabled" json:"enabled"`
+	MountPath string `form:"mountpath" json:"mountpath"`
 }
 
 func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {

@@ -16,21 +16,21 @@ import (
 )
 
 type SSHOptions struct {
-	Username              string
-	Password              string
-	Port                  int
-	AuthorizedKeysPath    string
-	PrivatekeyPath        string
-	PublickeyPath         string
-	KnownHostsPath        string
-	StrictHostKeyChecking bool
+	Username              string `form:"username" json:"username"`
+	Password              string `form:"password" json:"password"`
+	Port                  int    `form:"port" json:"port"`
+	AuthorizedKeysPath    string `form:"authorized_keys_path" json:"authorized_keys_path"`
+	PrivatekeyPath        string `form:"privatekey_path" json:"privatekey_path"`
+	PublickeyPath         string `form:"publickey_path" json:"publickey_path"`
+	KnownHostsPath        string `form:"knownhosts_path" json:"knownhosts_path"`
+	StrictHostKeyChecking bool   `form:"stricthostkeychecking" json:"stricthostkeychecking"`
 }
 
 type AnsibleOptions struct {
-	Hosts          string
-	Role           string
-	BecomePassword string
-	InstallDir     string
+	Hosts          string `form:"hosts" json:"hosts"`
+	Role           string `form:"role" json:"role"`
+	BecomePassword string `form:"become_password" json:"become_password"`
+	InstallDir     string `form:"installdir" json:"installdir"`
 }
 
 var sshOptions SSHOptions

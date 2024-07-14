@@ -15,9 +15,9 @@ import (
 type PVCOptions struct {
 	Name             string
 	Namespace        string
-	AccessMode       string
-	StorageClassName string
-	StorageSize      string
+	AccessMode       string `form:"accessmode" json:"accessmode"`
+	StorageClassName string `form:"storageclassname" json:"storageclassname"`
+	StorageSize      string `form:"storagesize" json:"storagesize"`
 }
 
 func CreateOrUpdatePVC(clientset *kubernetes.Clientset, ctx context.Context, opts PVCOptions) error {

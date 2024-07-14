@@ -13,10 +13,10 @@ import (
 type HPAOptions struct {
 	Name        string
 	Namespace   string
-	Enabled     bool
-	MinReplicas int32
-	MaxReplicas int32
-	CPURate     int32
+	Enabled     bool  `form:"enabled" json:"enabled"`
+	MinReplicas int32 `form:"minreplicas" json:"minreplicas"`
+	MaxReplicas int32 `form:"maxreplicas" json:"maxreplicas"`
+	CPURate     int32 `form:"cpurate" json:"cpurate"`
 }
 
 func CreateOrUpdateHPA(clientset *kubernetes.Clientset, ctx context.Context, opts HPAOptions) error {

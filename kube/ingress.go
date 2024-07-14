@@ -23,14 +23,14 @@ import (
 )
 
 type IngressOptions struct {
-	Name            string
+	Name            string `form:"name" json:"name"`
 	Namespace       string
-	Host            string
-	TLS             bool
-	SelfSigned      bool
-	SelfSignedYears int
-	CrtPath         string
-	KeyPath         string
+	Host            string `form:"host" json:"host"`
+	TLS             bool   `form:"tls" json:"tls"`
+	SelfSigned      bool   `form:"selfsigned" json:"selfsigned"`
+	SelfSignedYears int    `form:"selfsignedyears" json:"selfsignedyears"`
+	CrtPath         string `form:"crtpath" json:"crtpath"`
+	KeyPath         string `form:"keypath" json:"keypath"`
 }
 
 func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions) error {

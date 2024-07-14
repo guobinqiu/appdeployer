@@ -14,7 +14,7 @@ import (
 type ServiceOptions struct {
 	Name       string
 	Namespace  string
-	Port       int32
+	Port       int32 `form:"port" json:"port"`
 	TargetPort int32
 }
 

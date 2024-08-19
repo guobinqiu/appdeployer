@@ -32,6 +32,8 @@ func (deployer *KubeDeployer) Deploy(c *gin.Context) {
 		return
 	}
 
+	//TODO: set default values here
+
 	if err := cmd.KubeDeploy(&req.DefaultOptions, &req.GitOptions, &req.KubeOptions, &req.DockerOptions); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"msg": err.Error(),

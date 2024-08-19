@@ -31,6 +31,8 @@ func (deployer *VMDeployer) Deploy(c *gin.Context) {
 		return
 	}
 
+	//TODO: set default values here
+
 	if err := cmd.VMDeploy(&req.DefaultOptions, &req.GitOptions, &req.SSHOptions, &req.AnsibleOptions); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"msg": err.Error(),

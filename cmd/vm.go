@@ -9,6 +9,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/guobinqiu/appdeployer/git"
 	"github.com/guobinqiu/appdeployer/helpers"
 	"github.com/guobinqiu/appdeployer/ssh"
 	"github.com/spf13/cobra"
@@ -69,23 +70,27 @@ var vmCmd = &cobra.Command{
 	Use:   "vm",
 	Short: "Deploy app to VM set",
 	Run: func(cmd *cobra.Command, args []string) {
-		setDefaultOptions()
-		setSSHOptions()
-		setAnsibleOptions()
-
-		gitPull()
-
-		if err := setupAnsible(); err != nil {
-			panic(err)
-		}
-
-		if err := runPlaybook(); err != nil {
-			panic(err)
-		}
+		VMDeploy(&defaultOptions, &gitOptions, &sshOptions, &ansibleOptions)
 	},
 }
 
-func setSSHOptions() {
+func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions) {
+	setDefaultOptions(defaultOptions)
+	setSSHOptions(sshOptions)
+	setAnsibleOptions(ansibleOptions)
+
+	gitPull(gitOptions)
+
+	if err := setupAnsible(); err != nil {
+		panic(err)
+	}
+
+	if err := runPlaybook(); err != nil {
+		panic(err)
+	}
+}
+
+func setSSHOptions(sshOptions *SSHOptions) {
 	if helpers.IsBlank(sshOptions.Username) {
 		panic("ssh.username is required")
 	}
@@ -95,7 +100,7 @@ func setSSHOptions() {
 	}
 }
 
-func setAnsibleOptions() {
+func setAnsibleOptions(ansibleOptions *AnsibleOptions) {
 	if helpers.IsBlank(ansibleOptions.Role) {
 		panic("ansible.role is required")
 	}

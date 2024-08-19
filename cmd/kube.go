@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/guobinqiu/appdeployer/docker"
+	"github.com/guobinqiu/appdeployer/git"
 	"github.com/guobinqiu/appdeployer/helpers"
 	"github.com/guobinqiu/appdeployer/kube"
 	"github.com/spf13/cobra"
@@ -132,122 +133,126 @@ var kubeCmd = &cobra.Command{
 	Use:   "kube",
 	Short: "Deploy app to kubernetes cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		setDefaultOptions()
-		setDockerOptions()
-		setKubeOptions()
-
-		gitPull()
-
-		// Create a docker service
-		dockerservice, err := docker.NewDockerService()
-		if err != nil {
-			panic(err)
-		}
-
-		//TODO handle timeout or cancel
-		ctx := context.TODO()
-
-		// Build an app into a docker image
-		if err := dockerservice.BuildImage(ctx, dockerOptions); err != nil {
-			panic(err)
-		}
-
-		// Push the docker image to docker registry
-		if err := dockerservice.PushImage(ctx, dockerOptions); err != nil {
-			panic(err)
-		}
-
-		dockerservice.Close()
-
-		// Create a kubernetes client by the specified kubeconfig
-		config, err := clientcmd.BuildConfigFromFlags("", kubeOptions.Kubeconfig)
-		if err != nil {
-			panic(err)
-		}
-
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err)
-		}
-
-		// Update or create kubernetes resource objects
-		if err := kube.CreateOrUpdateNamespace(clientset, ctx, kubeOptions.Namespace); err != nil {
-			panic(err)
-		}
-
-		if err := kube.CreateOrUpdateDockerSecret(clientset, ctx, kube.DockerSecretOptions{
-			Name:          defaultOptions.AppName,
-			Namespace:     kubeOptions.Namespace,
-			DockerOptions: dockerOptions,
-		}); err != nil {
-			panic(err)
-		}
-
-		if err := kube.CreateOrUpdateServiceAccount(clientset, ctx, kube.ServiceAccountOptions{
-			Name:      defaultOptions.AppName,
-			Namespace: kubeOptions.Namespace,
-		}); err != nil {
-			panic(err)
-		}
-
-		if kubeOptions.DeploymentOptions.VolumeMount.Enabled {
-			kubeOptions.PvcOptions.Name = defaultOptions.AppName
-			kubeOptions.PvcOptions.Namespace = kubeOptions.Namespace
-			if err := kube.CreateOrUpdatePVC(clientset, ctx, kubeOptions.PvcOptions); err != nil {
-				panic(err)
-			}
-		} else {
-			kubeOptions.DeploymentOptions.Name = defaultOptions.AppName
-			kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
-			kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
-			if err := kube.DeleteDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
-				panic(err)
-			}
-
-			kubeOptions.HpaOptions.Name = defaultOptions.AppName
-			kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
-			if err := kube.DeletePVC(clientset, ctx, kubeOptions.HpaOptions); err != nil {
-				panic(err)
-			}
-		}
-
-		kubeOptions.DeploymentOptions.Name = defaultOptions.AppName
-		kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
-		kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
-		if err := kube.CreateOrUpdateDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
-			panic(err)
-		}
-
-		kubeOptions.ServiceOptions.Name = defaultOptions.AppName
-		kubeOptions.ServiceOptions.Namespace = kubeOptions.Namespace
-		kubeOptions.ServiceOptions.TargetPort = kubeOptions.DeploymentOptions.Port
-		if err := kube.CreateOrUpdateService(clientset, ctx, kubeOptions.ServiceOptions); err != nil {
-			panic(err)
-		}
-
-		kubeOptions.IngressOptions.Name = defaultOptions.AppName
-		kubeOptions.IngressOptions.Namespace = kubeOptions.Namespace
-		if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.IngressOptions); err != nil {
-			panic(err)
-		}
-
-		if kubeOptions.HpaOptions.Enabled {
-			kubeOptions.HpaOptions.Name = defaultOptions.AppName
-			kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
-			if err := kube.CreateOrUpdateHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
-				panic(err)
-			}
-		} else {
-			kubeOptions.HpaOptions.Name = defaultOptions.AppName
-			kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
-			if err := kube.DeleteHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
-				panic(err)
-			}
-		}
+		KubeDeploy(&defaultOptions, &gitOptions, &kubeOptions, &dockerOptions)
 	},
 }
 
-func setDockerOptions() {
+func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kubeOptions *KubeOptions, dockerOptions *docker.DockerOptions) {
+	setDefaultOptions(defaultOptions)
+	setDockerOptions(dockerOptions, defaultOptions)
+	setKubeOptions(kubeOptions)
+
+	gitPull(gitOptions)
+
+	// Create a docker service
+	dockerservice, err := docker.NewDockerService()
+	if err != nil {
+		panic(err)
+	}
+
+	//TODO handle timeout or cancel
+	ctx := context.TODO()
+
+	// Build an app into a docker image
+	if err := dockerservice.BuildImage(ctx, *dockerOptions); err != nil {
+		panic(err)
+	}
+
+	// Push the docker image to docker registry
+	if err := dockerservice.PushImage(ctx, *dockerOptions); err != nil {
+		panic(err)
+	}
+
+	dockerservice.Close()
+
+	// Create a kubernetes client by the specified kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", kubeOptions.Kubeconfig)
+	if err != nil {
+		panic(err)
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err)
+	}
+
+	// Update or create kubernetes resource objects
+	if err := kube.CreateOrUpdateNamespace(clientset, ctx, kubeOptions.Namespace); err != nil {
+		panic(err)
+	}
+
+	if err := kube.CreateOrUpdateDockerSecret(clientset, ctx, kube.DockerSecretOptions{
+		Name:          defaultOptions.AppName,
+		Namespace:     kubeOptions.Namespace,
+		DockerOptions: *dockerOptions,
+	}); err != nil {
+		panic(err)
+	}
+
+	if err := kube.CreateOrUpdateServiceAccount(clientset, ctx, kube.ServiceAccountOptions{
+		Name:      defaultOptions.AppName,
+		Namespace: kubeOptions.Namespace,
+	}); err != nil {
+		panic(err)
+	}
+
+	if kubeOptions.DeploymentOptions.VolumeMount.Enabled {
+		kubeOptions.PvcOptions.Name = defaultOptions.AppName
+		kubeOptions.PvcOptions.Namespace = kubeOptions.Namespace
+		if err := kube.CreateOrUpdatePVC(clientset, ctx, kubeOptions.PvcOptions); err != nil {
+			panic(err)
+		}
+	} else {
+		kubeOptions.DeploymentOptions.Name = defaultOptions.AppName
+		kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
+		kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
+		if err := kube.DeleteDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
+			panic(err)
+		}
+
+		kubeOptions.HpaOptions.Name = defaultOptions.AppName
+		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
+		if err := kube.DeletePVC(clientset, ctx, kubeOptions.HpaOptions); err != nil {
+			panic(err)
+		}
+	}
+
+	kubeOptions.DeploymentOptions.Name = defaultOptions.AppName
+	kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
+	kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
+	if err := kube.CreateOrUpdateDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
+		panic(err)
+	}
+
+	kubeOptions.ServiceOptions.Name = defaultOptions.AppName
+	kubeOptions.ServiceOptions.Namespace = kubeOptions.Namespace
+	kubeOptions.ServiceOptions.TargetPort = kubeOptions.DeploymentOptions.Port
+	if err := kube.CreateOrUpdateService(clientset, ctx, kubeOptions.ServiceOptions); err != nil {
+		panic(err)
+	}
+
+	kubeOptions.IngressOptions.Name = defaultOptions.AppName
+	kubeOptions.IngressOptions.Namespace = kubeOptions.Namespace
+	if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.IngressOptions); err != nil {
+		panic(err)
+	}
+
+	if kubeOptions.HpaOptions.Enabled {
+		kubeOptions.HpaOptions.Name = defaultOptions.AppName
+		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
+		if err := kube.CreateOrUpdateHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
+			panic(err)
+		}
+	} else {
+		kubeOptions.HpaOptions.Name = defaultOptions.AppName
+		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
+		if err := kube.DeleteHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func setDockerOptions(dockerOptions *docker.DockerOptions, defaultOptions *DefaultOptions) {
 	dockerOptions.AppDir = defaultOptions.AppDir
 
 	dockerOptions.Dockerconfig = helpers.ExpandUser(dockerOptions.Dockerconfig)
@@ -267,7 +272,7 @@ func setDockerOptions() {
 	}
 }
 
-func setKubeOptions() {
+func setKubeOptions(kubeOptions *KubeOptions) {
 	kubeOptions.Kubeconfig = helpers.ExpandUser(kubeOptions.Kubeconfig)
 	exist, err := helpers.IsFileExist(kubeOptions.Kubeconfig)
 	if err != nil {

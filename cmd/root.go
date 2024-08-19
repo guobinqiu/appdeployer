@@ -10,8 +10,8 @@ import (
 )
 
 type DefaultOptions struct {
-	AppDir  string
-	AppName string
+	AppDir  string `form:"appdir" json:"appdir"`
+	AppName string `form:"appname" json:"appname"`
 }
 
 var (
@@ -48,7 +48,7 @@ func init() {
 	rootCmd.AddCommand(vmCmd)
 }
 
-func setDefaultOptions() {
+func setDefaultOptions(defaultOptions *DefaultOptions) {
 	defaultOptions.AppDir = helpers.ExpandUser(defaultOptions.AppDir)
 	if helpers.IsBlank(defaultOptions.AppDir) {
 		panic("appdir is required")
@@ -68,13 +68,13 @@ func setDefaultOptions() {
 }
 
 // Pull or clone into appdir
-func gitPull() {
+func gitPull(gitOptions *git.GitOptions) {
 	gitOptions.AppDir = defaultOptions.AppDir
 	if gitOptions.Enabled {
 		if helpers.IsBlank(gitOptions.Repo) {
 			panic("git.repo is required")
 		}
-		if err := git.Pull(gitOptions); err != nil {
+		if err := git.Pull(*gitOptions); err != nil {
 			panic(err)
 		}
 	}

@@ -9,11 +9,11 @@ import (
 )
 
 type GitOptions struct {
-	Enabled  bool
-	Repo     string
+	Enabled  bool   `form:"enabled" json:"enabled"`
+	Repo     string `form:"repo" json:"repo"`
 	AppDir   string
-	Username string
-	Password string
+	Username string `form:"username" json:"username"`
+	Password string `form:"password" json:"password"`
 }
 
 func Pull(opts GitOptions) error {

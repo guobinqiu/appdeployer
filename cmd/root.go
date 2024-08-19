@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/guobinqiu/appdeployer/git"
@@ -48,34 +49,38 @@ func init() {
 	rootCmd.AddCommand(vmCmd)
 }
 
-func setDefaultOptions(defaultOptions *DefaultOptions) {
+func setDefaultOptions(defaultOptions *DefaultOptions) error {
 	defaultOptions.AppDir = helpers.ExpandUser(defaultOptions.AppDir)
 	if helpers.IsBlank(defaultOptions.AppDir) {
-		panic("appdir is required")
+		return fmt.Errorf("appdir is required")
 	}
 
 	exist, err := helpers.IsDirExist(defaultOptions.AppDir)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if !exist {
-		panic("appdir does not exist")
+		return fmt.Errorf("appdir does not exist")
 	}
 
 	if helpers.IsBlank(defaultOptions.AppName) {
 		defaultOptions.AppName = filepath.Base(defaultOptions.AppDir)
 	}
+
+	return nil
 }
 
 // Pull or clone into appdir
-func gitPull(gitOptions *git.GitOptions) {
+func gitPull(gitOptions *git.GitOptions) error {
 	gitOptions.AppDir = defaultOptions.AppDir
 	if gitOptions.Enabled {
 		if helpers.IsBlank(gitOptions.Repo) {
-			panic("git.repo is required")
+			return fmt.Errorf("git.repo is required")
 		}
 		if err := git.Pull(*gitOptions); err != nil {
-			panic(err)
+			return err
 		}
 	}
+
+	return nil
 }

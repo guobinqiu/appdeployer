@@ -69,53 +69,70 @@ func init() {
 var vmCmd = &cobra.Command{
 	Use:   "vm",
 	Short: "Deploy app to VM set",
-	Run: func(cmd *cobra.Command, args []string) {
-		VMDeploy(&defaultOptions, &gitOptions, &sshOptions, &ansibleOptions)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return VMDeploy(&defaultOptions, &gitOptions, &sshOptions, &ansibleOptions)
 	},
 }
 
-func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions) {
-	setDefaultOptions(defaultOptions)
-	setSSHOptions(sshOptions)
-	setAnsibleOptions(ansibleOptions)
+func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions) error {
+	if err := setDefaultOptions(defaultOptions); err != nil {
+		return err
+	}
 
-	gitPull(gitOptions)
+	if err := setSSHOptions(sshOptions); err != nil {
+		return err
+	}
+
+	if err := setAnsibleOptions(ansibleOptions); err != nil {
+		return err
+	}
+
+	if err := gitPull(gitOptions); err != nil {
+		return err
+	}
 
 	if err := setupAnsible(); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := runPlaybook(); err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
-func setSSHOptions(sshOptions *SSHOptions) {
+func setSSHOptions(sshOptions *SSHOptions) error {
 	if helpers.IsBlank(sshOptions.Username) {
-		panic("ssh.username is required")
+		return fmt.Errorf("ssh.username is required")
 	}
 
 	if helpers.IsBlank(sshOptions.Password) {
-		panic("ssh.password is required")
+		return fmt.Errorf("ssh.password is required")
 	}
+
+	return nil
 }
 
-func setAnsibleOptions(ansibleOptions *AnsibleOptions) {
+func setAnsibleOptions(ansibleOptions *AnsibleOptions) error {
 	if helpers.IsBlank(ansibleOptions.Role) {
-		panic("ansible.role is required")
+		return fmt.Errorf("ansible.role is required")
 	}
 
 	roles, err := helpers.ListSubDirs("ansible_roles/")
 	if err != nil {
-		panic(err)
+		return err
 	}
+
 	if !helpers.Contains(roles, ansibleOptions.Role) {
-		panic(fmt.Sprintf("role should be one of %s", roles))
+		return fmt.Errorf("role should be one of %s", roles)
 	}
 
 	if helpers.IsBlank(ansibleOptions.BecomePassword) {
-		panic("ansible.become_password is required")
+		return fmt.Errorf("ansible.become_password is required")
 	}
+
+	return nil
 }
 
 func setupAnsible() error {

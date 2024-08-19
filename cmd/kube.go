@@ -132,22 +132,30 @@ func init() {
 var kubeCmd = &cobra.Command{
 	Use:   "kube",
 	Short: "Deploy app to kubernetes cluster",
-	Run: func(cmd *cobra.Command, args []string) {
-		KubeDeploy(&defaultOptions, &gitOptions, &kubeOptions, &dockerOptions)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return KubeDeploy(&defaultOptions, &gitOptions, &kubeOptions, &dockerOptions)
 	},
 }
 
-func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kubeOptions *KubeOptions, dockerOptions *docker.DockerOptions) {
-	setDefaultOptions(defaultOptions)
-	setDockerOptions(dockerOptions, defaultOptions)
-	setKubeOptions(kubeOptions)
+func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kubeOptions *KubeOptions, dockerOptions *docker.DockerOptions) error {
+	if err := setDefaultOptions(defaultOptions); err != nil {
+		return err
+	}
+	if err := setDockerOptions(dockerOptions, defaultOptions); err != nil {
+		return err
+	}
+	if err := setKubeOptions(kubeOptions); err != nil {
+		return err
+	}
 
-	gitPull(gitOptions)
+	if err := gitPull(gitOptions); err != nil {
+		return err
+	}
 
 	// Create a docker service
 	dockerservice, err := docker.NewDockerService()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	//TODO handle timeout or cancel
@@ -155,30 +163,32 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 
 	// Build an app into a docker image
 	if err := dockerservice.BuildImage(ctx, *dockerOptions); err != nil {
-		panic(err)
+		return err
 	}
 
 	// Push the docker image to docker registry
 	if err := dockerservice.PushImage(ctx, *dockerOptions); err != nil {
-		panic(err)
+		return err
 	}
 
-	dockerservice.Close()
+	if err := dockerservice.Close(); err != nil {
+		return err
+	}
 
 	// Create a kubernetes client by the specified kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", kubeOptions.Kubeconfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	// Update or create kubernetes resource objects
 	if err := kube.CreateOrUpdateNamespace(clientset, ctx, kubeOptions.Namespace); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := kube.CreateOrUpdateDockerSecret(clientset, ctx, kube.DockerSecretOptions{
@@ -186,34 +196,34 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 		Namespace:     kubeOptions.Namespace,
 		DockerOptions: *dockerOptions,
 	}); err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := kube.CreateOrUpdateServiceAccount(clientset, ctx, kube.ServiceAccountOptions{
 		Name:      defaultOptions.AppName,
 		Namespace: kubeOptions.Namespace,
 	}); err != nil {
-		panic(err)
+		return err
 	}
 
 	if kubeOptions.DeploymentOptions.VolumeMount.Enabled {
 		kubeOptions.PvcOptions.Name = defaultOptions.AppName
 		kubeOptions.PvcOptions.Namespace = kubeOptions.Namespace
 		if err := kube.CreateOrUpdatePVC(clientset, ctx, kubeOptions.PvcOptions); err != nil {
-			panic(err)
+			return err
 		}
 	} else {
 		kubeOptions.DeploymentOptions.Name = defaultOptions.AppName
 		kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
 		kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
 		if err := kube.DeleteDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
-			panic(err)
+			return err
 		}
 
 		kubeOptions.HpaOptions.Name = defaultOptions.AppName
 		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
 		if err := kube.DeletePVC(clientset, ctx, kubeOptions.HpaOptions); err != nil {
-			panic(err)
+			return err
 		}
 	}
 
@@ -221,65 +231,69 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 	kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
 	kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
 	if err := kube.CreateOrUpdateDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
-		panic(err)
+		return err
 	}
 
 	kubeOptions.ServiceOptions.Name = defaultOptions.AppName
 	kubeOptions.ServiceOptions.Namespace = kubeOptions.Namespace
 	kubeOptions.ServiceOptions.TargetPort = kubeOptions.DeploymentOptions.Port
 	if err := kube.CreateOrUpdateService(clientset, ctx, kubeOptions.ServiceOptions); err != nil {
-		panic(err)
+		return err
 	}
 
 	kubeOptions.IngressOptions.Name = defaultOptions.AppName
 	kubeOptions.IngressOptions.Namespace = kubeOptions.Namespace
 	if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.IngressOptions); err != nil {
-		panic(err)
+		return err
 	}
 
 	if kubeOptions.HpaOptions.Enabled {
 		kubeOptions.HpaOptions.Name = defaultOptions.AppName
 		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
 		if err := kube.CreateOrUpdateHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
-			panic(err)
+			return err
 		}
 	} else {
 		kubeOptions.HpaOptions.Name = defaultOptions.AppName
 		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
 		if err := kube.DeleteHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
-			panic(err)
+			return err
 		}
 	}
+
+	return nil
 }
 
-func setDockerOptions(dockerOptions *docker.DockerOptions, defaultOptions *DefaultOptions) {
+func setDockerOptions(dockerOptions *docker.DockerOptions, defaultOptions *DefaultOptions) error {
 	dockerOptions.AppDir = defaultOptions.AppDir
 
 	dockerOptions.Dockerconfig = helpers.ExpandUser(dockerOptions.Dockerconfig)
 	exist, err := helpers.IsFileExist(dockerOptions.Dockerconfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if !exist {
-		panic("dockerconfig does not exist")
+		return fmt.Errorf("dockerconfig does not exist")
 	}
 
 	if helpers.IsBlank(dockerOptions.Repository) && dockerOptions.Registry == docker.DOCKERHUB {
 		if helpers.IsBlank(dockerOptions.Username) {
-			panic("docker.username is required")
+			return fmt.Errorf("docker.username is required")
 		}
 		dockerOptions.Repository = fmt.Sprintf("%s/%s", dockerOptions.Username, defaultOptions.AppName)
 	}
+
+	return nil
 }
 
-func setKubeOptions(kubeOptions *KubeOptions) {
+func setKubeOptions(kubeOptions *KubeOptions) error {
 	kubeOptions.Kubeconfig = helpers.ExpandUser(kubeOptions.Kubeconfig)
 	exist, err := helpers.IsFileExist(kubeOptions.Kubeconfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	if !exist {
-		panic("kubeconfig does not exist")
+		return fmt.Errorf("kubeconfig does not exist")
 	}
 
 	if helpers.IsBlank(kubeOptions.Namespace) {
@@ -292,10 +306,12 @@ func setKubeOptions(kubeOptions *KubeOptions) {
 
 	if kubeOptions.IngressOptions.TLS && !kubeOptions.IngressOptions.SelfSigned {
 		if helpers.IsBlank(kubeOptions.IngressOptions.CrtPath) {
-			panic("crt path does not exist")
+			return fmt.Errorf("crt path does not exist")
 		}
 		if helpers.IsBlank(kubeOptions.IngressOptions.KeyPath) {
-			panic("key path does not exist")
+			return fmt.Errorf("key path does not exist")
 		}
 	}
+
+	return nil
 }

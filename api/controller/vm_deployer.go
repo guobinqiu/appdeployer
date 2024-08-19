@@ -5,11 +5,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/guobinqiu/appdeployer/cmd"
+	"github.com/guobinqiu/appdeployer/git"
 )
 
 type VMReq struct {
 	SSHOptions     cmd.SSHOptions     `form:"ssh" json:"ssh"`
 	AnsibleOptions cmd.AnsibleOptions `form:"ansible" json:"ansible"`
+	DefaultOptions cmd.DefaultOptions `form:"default" json:"default"`
+	GitOptions     git.GitOptions     `form:"git" json:"git"`
 }
 
 type VMDeployer struct {
@@ -20,8 +23,15 @@ func NewVMDeployer() *VMDeployer {
 }
 
 func (deployer *VMDeployer) Deploy(c *gin.Context) {
-	var vmReq VMReq
-	if err := c.ShouldBind(vmReq); err != nil {
+	var req VMReq
+	if err := c.ShouldBind(req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	if err := cmd.VMDeploy(&req.DefaultOptions, &req.GitOptions, &req.SSHOptions, &req.AnsibleOptions); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"msg": err.Error(),
 		})
@@ -30,6 +40,6 @@ func (deployer *VMDeployer) Deploy(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"msg":  "success",
-		"data": vmReq,
+		"data": req,
 	})
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -40,7 +41,6 @@ var ansibleOptions AnsibleOptions
 func init() {
 	// set default values
 	viper.SetDefault("ssh.port", 22)
-	viper.SetDefault("ssh.homedir", "~")
 	viper.SetDefault("ssh.authorized_keys_path", "~/.ssh/authorized_keys")
 	viper.SetDefault("ssh.privatekey_path", "~/.ssh/appdeployer")
 	viper.SetDefault("ssh.publickey_path", "~/.ssh/appdeployer.pub")
@@ -91,11 +91,11 @@ func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOpt
 		return err
 	}
 
-	if err := setupAnsible(); err != nil {
+	if err := setupAnsible(sshOptions, ansibleOptions); err != nil {
 		return err
 	}
 
-	if err := runPlaybook(); err != nil {
+	if err := runPlaybook(defaultOptions, sshOptions, ansibleOptions); err != nil {
 		return err
 	}
 
@@ -119,7 +119,9 @@ func setAnsibleOptions(ansibleOptions *AnsibleOptions) error {
 		return fmt.Errorf("ansible.role is required")
 	}
 
-	roles, err := helpers.ListSubDirs("ansible_roles/")
+	currentDir, _ := os.Getwd()
+	rootDir := helpers.FindRootDir(currentDir)
+	roles, err := helpers.ListSubDirs(filepath.Join(rootDir, "ansible_roles/"))
 	if err != nil {
 		return err
 	}
@@ -135,7 +137,7 @@ func setAnsibleOptions(ansibleOptions *AnsibleOptions) error {
 	return nil
 }
 
-func setupAnsible() error {
+func setupAnsible(sshOptions *SSHOptions, ansibleOptions *AnsibleOptions) error {
 	keyManager := ssh.NewSSHKeyManager(
 		ssh.WithPrivateKeyPath(sshOptions.PrivatekeyPath),
 		ssh.WithPublicKeyPath(sshOptions.PublickeyPath),
@@ -193,7 +195,7 @@ type PlaybookData struct {
 	Role       string
 }
 
-func runPlaybook() error {
+func runPlaybook(defaultOptions *DefaultOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions) error {
 	inventoryFile, err := executeTemplate(inventoryTemplate, InventoryData{
 		AppName: defaultOptions.AppName,
 		Hosts:   ansibleOptions.Hosts,
@@ -224,6 +226,10 @@ func runPlaybook() error {
 	cmd := exec.Command("ansible-playbook", cmdArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+
+	currentDir, _ := os.Getwd()
+	rootDir := helpers.FindRootDir(currentDir)
+	cmd.Dir = filepath.Join(rootDir)
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to execute playbook: %v", err)

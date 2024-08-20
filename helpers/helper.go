@@ -98,6 +98,24 @@ func AppendFile(path string, data []byte, perm os.FileMode) error {
 	return nil
 }
 
-func SetDefault(field interface{}, defaultValue interface{}) {
-	reflect.ValueOf(field).Elem().Set(reflect.ValueOf(defaultValue))
+func SetDefault(f interface{}, v interface{}) {
+	field := reflect.ValueOf(f).Elem()
+	defaultValue := reflect.ValueOf(v)
+	if field.IsZero() {
+		field.Set(defaultValue)
+	}
+}
+
+func FindRootDir(dir string) string {
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parentDir := filepath.Dir(dir)
+		if parentDir == dir {
+			break
+		}
+		dir = parentDir
+	}
+	return ""
 }

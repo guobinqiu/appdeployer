@@ -109,6 +109,8 @@
 
 不同的集群环境可以给`--kube.kubeconfig`参数设置不同的kubeconfig文件, 目前镜像用的docker, 可以配置私有镜像
 
+#### CLI
+
 ```
 go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
 
@@ -117,9 +119,27 @@ go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiu
 go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
 ```
 
+#### API
+
+```
+curl --location 'http://localhost:8080/deploy/kube' \
+--header 'Content-Type: application/json' \
+--data '{
+    "default": {
+        "appdir": "~/workspace/hellogo"
+    },
+    "docker": {
+        "username": "qiuguobin",
+        "password": "111111111"
+    }
+}'
+```
+
 ### 发布到虚拟机集群
 
 安装ansible,不同的集群环境可以给`--ansible.hosts`参数设置不同的主机列表,用逗号分隔
+
+#### CLI
 
 ```
 go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
@@ -128,3 +148,25 @@ go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin -
 
 go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
 ```
+
+#### API
+
+```
+curl --location 'http://localhost:8080/deploy/vm' \
+--header 'Content-Type: application/json' \
+--data '{
+    "default": {
+        "appdir": "~/workspace/hellogo"
+    },
+    "ssh": {
+        "username": "guobin",
+        "password": "111111"
+    },
+    "ansible": {
+        "role": "go",
+        "become_password": "111111",
+        "hosts": "192.168.1.9"
+    }
+}'
+```
+

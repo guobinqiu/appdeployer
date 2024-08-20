@@ -109,6 +109,8 @@
 
 Different cluster environments can set different kubeconfig files for the `--kube.kubeconfig` parameter. Currently, Docker images are used, and private registries can be configured.
 
+#### CLI
+
 ```
 go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
 
@@ -117,9 +119,27 @@ go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiu
 go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
 ```
 
+#### API
+
+```
+curl --location 'http://localhost:8080/deploy/kube' \
+--header 'Content-Type: application/json' \
+--data '{
+    "default": {
+        "appdir": "~/workspace/hellogo"
+    },
+    "docker": {
+        "username": "qiuguobin",
+        "password": "111111111"
+    }
+}'
+```
+
 ### Deploy to VM Cluster
 
 Install Ansible. Different cluster environments can set different host lists for the `--ansible.hosts` parameter, separated by commas.
+
+#### CLI
 
 ```
 go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
@@ -127,4 +147,25 @@ go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --s
 go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=java
 
 go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
+```
+
+#### API
+
+```
+curl --location 'http://localhost:8080/deploy/vm' \
+--header 'Content-Type: application/json' \
+--data '{
+    "default": {
+        "appdir": "~/workspace/hellogo"
+    },
+    "ssh": {
+        "username": "guobin",
+        "password": "111111"
+    },
+    "ansible": {
+        "role": "go",
+        "become_password": "111111",
+        "hosts": "192.168.1.9"
+    }
+}'
 ```

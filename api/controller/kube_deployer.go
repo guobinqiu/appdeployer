@@ -7,6 +7,8 @@ import (
 	"github.com/guobinqiu/appdeployer/cmd"
 	"github.com/guobinqiu/appdeployer/docker"
 	"github.com/guobinqiu/appdeployer/git"
+	"github.com/guobinqiu/appdeployer/helpers"
+	"github.com/guobinqiu/appdeployer/kube"
 )
 
 type KubeReq struct {
@@ -25,14 +27,53 @@ func NewKubeDeployer() *KubeDeployer {
 
 func (deployer *KubeDeployer) Deploy(c *gin.Context) {
 	var req KubeReq
-	if err := c.ShouldBind(req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"msg": err.Error(),
 		})
 		return
 	}
 
-	//TODO: set default values here
+	helpers.SetDefault(&req.DockerOptions.Dockerconfig, "~/.docker/config.json")
+	helpers.SetDefault(&req.DockerOptions.Dockerfile, "./Dockerfile")
+	helpers.SetDefault(&req.DockerOptions.Registry, docker.DOCKERHUB)
+	helpers.SetDefault(&req.DockerOptions.Tag, "latest")
+	helpers.SetDefault(&req.KubeOptions.Kubeconfig, "~/.kube/config")
+	helpers.SetDefault(&req.KubeOptions.IngressOptions.TLS, false)
+	helpers.SetDefault(&req.KubeOptions.IngressOptions.SelfSigned, false)
+	helpers.SetDefault(&req.KubeOptions.IngressOptions.SelfSignedYears, 1)
+	helpers.SetDefault(&req.KubeOptions.ServiceOptions.Port, int32(8000))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.Replicas, int32(1))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.Port, int32(8000))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.RollingUpdate.MaxSurge, "1")
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.RollingUpdate.MaxUnavailable, "0")
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.Enabled, false)
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.Type, kube.ProbeTypeHTTPGet)
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.Path, "/")
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.Scheme, "http")
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.InitialDelaySeconds, int32(0))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.TimeoutSeconds, int32(1))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.PeriodSeconds, int32(10))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.SuccessThreshold, int32(1))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.LivenessProbe.FailureThreshold, int32(3))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.Enabled, false)
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.Type, kube.ProbeTypeHTTPGet)
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.Path, "/")
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.Scheme, "http")
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.InitialDelaySeconds, int32(0))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.TimeoutSeconds, int32(1))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.PeriodSeconds, int32(10))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.SuccessThreshold, int32(1))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.ReadinessProbe.FailureThreshold, int32(3))
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.VolumeMount.Enabled, false)
+	helpers.SetDefault(&req.KubeOptions.DeploymentOptions.VolumeMount.MountPath, "/app/data")
+	helpers.SetDefault(&req.KubeOptions.HpaOptions.Enabled, false)
+	helpers.SetDefault(&req.KubeOptions.HpaOptions.MinReplicas, int32(1))
+	helpers.SetDefault(&req.KubeOptions.HpaOptions.MaxReplicas, int32(10))
+	helpers.SetDefault(&req.KubeOptions.HpaOptions.CPURate, int32(50))
+	helpers.SetDefault(&req.KubeOptions.PvcOptions.AccessMode, "readwriteonce")
+	helpers.SetDefault(&req.KubeOptions.PvcOptions.StorageClassName, "openebs-hostpath")
+	helpers.SetDefault(&req.KubeOptions.PvcOptions.StorageSize, "1G")
 
 	if err := cmd.KubeDeploy(&req.DefaultOptions, &req.GitOptions, &req.KubeOptions, &req.DockerOptions); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

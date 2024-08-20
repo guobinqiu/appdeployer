@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -95,4 +96,8 @@ func AppendFile(path string, data []byte, perm os.FileMode) error {
 	}
 
 	return nil
+}
+
+func SetDefault(field interface{}, defaultValue interface{}) {
+	reflect.ValueOf(field).Elem().Set(reflect.ValueOf(defaultValue))
 }

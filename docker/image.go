@@ -106,7 +106,7 @@ func (ds *DockerService) BuildImage(ctx context.Context, opts DockerOptions) err
 	return nil
 }
 
-func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions) error {
+func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions, logHandler func(msg string)) error {
 	if err := opts.Validate(); err != nil {
 		return err
 	}
@@ -137,7 +137,7 @@ func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions) erro
 	if err != nil {
 		return fmt.Errorf("failed to read response body while pushing Docker image: %v", err)
 	}
-	fmt.Println(string(body))
+	logHandler(string(body))
 
 	return nil
 }

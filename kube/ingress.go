@@ -33,7 +33,7 @@ type IngressOptions struct {
 	KeyPath         string `form:"keypath" json:"keypath"`
 }
 
-func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions) error {
+func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context, opts IngressOptions, logHandler func(msg string)) error {
 	ingressClass := "nginx"
 	pathType := networkingv1.PathTypePrefix
 
@@ -94,9 +94,9 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create ingress resource: %v", err)
 		}
-		fmt.Println("ingress resource successfully updated")
+		logHandler("ingress resource successfully updated")
 	} else {
-		fmt.Println("ingress resource successfully created")
+		logHandler("ingress resource successfully created")
 	}
 
 	return nil

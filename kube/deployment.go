@@ -83,7 +83,7 @@ type VolumeMount struct {
 	MountPath string `form:"mountpath" json:"mountpath"`
 }
 
-func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {
+func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions, logHandler func(msg string)) error {
 	maxSurge := intstr.Parse(opts.RollingUpdate.MaxSurge)
 	maxUnavailable := intstr.Parse(opts.RollingUpdate.MaxUnavailable)
 
@@ -180,28 +180,28 @@ func CreateOrUpdateDeployment(clientset *kubernetes.Clientset, ctx context.Conte
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create deployment resource: %v", err)
 		}
-		fmt.Println("deployment resource already exists, attempting update...")
+		logHandler("deployment resource already exists, attempting update...")
 		_, err := clientset.AppsV1().Deployments(opts.Namespace).Update(ctx, deployment, metav1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("failed to update deployment resource: %v", err)
 		}
-		fmt.Println("deployment resource successfully updated")
+		logHandler("deployment resource successfully updated")
 	} else {
-		fmt.Println("deployment resource successfully created")
+		logHandler("deployment resource successfully created")
 	}
 
 	return nil
 }
 
-func DeleteDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions) error {
+func DeleteDeployment(clientset *kubernetes.Clientset, ctx context.Context, opts DeploymentOptions, logHandler func(msg string)) error {
 	err := clientset.AppsV1().Deployments(opts.Namespace).Delete(ctx, opts.Name, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete deployment resource: %v", err)
 	}
 	if apierrors.IsNotFound(err) {
-		fmt.Printf("deployment resource %s in namespace %s not found, no action taken\n", opts.Name, opts.Namespace)
+		logHandler(fmt.Sprintf("deployment resource %s in namespace %s not found, no action taken\n", opts.Name, opts.Namespace))
 	} else {
-		fmt.Printf("deployment resource %s in namespace %s successfully deleted\n", opts.Name, opts.Namespace)
+		logHandler(fmt.Sprintf("deployment resource %s in namespace %s successfully deleted\n", opts.Name, opts.Namespace))
 	}
 	return nil
 }

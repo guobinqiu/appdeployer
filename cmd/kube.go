@@ -133,22 +133,24 @@ var kubeCmd = &cobra.Command{
 	Use:   "kube",
 	Short: "Deploy app to kubernetes cluster",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return KubeDeploy(&defaultOptions, &gitOptions, &kubeOptions, &dockerOptions)
+		return KubeDeploy(&defaultOptions, &gitOptions, &kubeOptions, &dockerOptions, func(msg string) {
+			fmt.Println(msg)
+		})
 	},
 }
 
-func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kubeOptions *KubeOptions, dockerOptions *docker.DockerOptions) error {
+func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kubeOptions *KubeOptions, dockerOptions *docker.DockerOptions, logHandler func(msg string)) error {
 	if err := setDefaultOptions(defaultOptions); err != nil {
 		return err
 	}
 	if err := setDockerOptions(dockerOptions, defaultOptions); err != nil {
 		return err
 	}
-	if err := setKubeOptions(kubeOptions); err != nil {
+	if err := setKubeOptions(kubeOptions, defaultOptions); err != nil {
 		return err
 	}
 
-	if err := gitPull(gitOptions); err != nil {
+	if err := gitPull(gitOptions, logHandler); err != nil {
 		return err
 	}
 
@@ -167,7 +169,7 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 	}
 
 	// Push the docker image to docker registry
-	if err := dockerservice.PushImage(ctx, *dockerOptions); err != nil {
+	if err := dockerservice.PushImage(ctx, *dockerOptions, logHandler); err != nil {
 		return err
 	}
 
@@ -187,7 +189,7 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 	}
 
 	// Update or create kubernetes resource objects
-	if err := kube.CreateOrUpdateNamespace(clientset, ctx, kubeOptions.Namespace); err != nil {
+	if err := kube.CreateOrUpdateNamespace(clientset, ctx, kubeOptions.Namespace, logHandler); err != nil {
 		return err
 	}
 
@@ -195,34 +197,34 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 		Name:          defaultOptions.AppName,
 		Namespace:     kubeOptions.Namespace,
 		DockerOptions: *dockerOptions,
-	}); err != nil {
+	}, logHandler); err != nil {
 		return err
 	}
 
 	if err := kube.CreateOrUpdateServiceAccount(clientset, ctx, kube.ServiceAccountOptions{
 		Name:      defaultOptions.AppName,
 		Namespace: kubeOptions.Namespace,
-	}); err != nil {
+	}, logHandler); err != nil {
 		return err
 	}
 
 	if kubeOptions.DeploymentOptions.VolumeMount.Enabled {
 		kubeOptions.PvcOptions.Name = defaultOptions.AppName
 		kubeOptions.PvcOptions.Namespace = kubeOptions.Namespace
-		if err := kube.CreateOrUpdatePVC(clientset, ctx, kubeOptions.PvcOptions); err != nil {
+		if err := kube.CreateOrUpdatePVC(clientset, ctx, kubeOptions.PvcOptions, logHandler); err != nil {
 			return err
 		}
 	} else {
 		kubeOptions.DeploymentOptions.Name = defaultOptions.AppName
 		kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
 		kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
-		if err := kube.DeleteDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
+		if err := kube.DeleteDeployment(clientset, ctx, kubeOptions.DeploymentOptions, logHandler); err != nil {
 			return err
 		}
 
 		kubeOptions.HpaOptions.Name = defaultOptions.AppName
 		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
-		if err := kube.DeletePVC(clientset, ctx, kubeOptions.HpaOptions); err != nil {
+		if err := kube.DeletePVC(clientset, ctx, kubeOptions.HpaOptions, logHandler); err != nil {
 			return err
 		}
 	}
@@ -230,33 +232,33 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 	kubeOptions.DeploymentOptions.Name = defaultOptions.AppName
 	kubeOptions.DeploymentOptions.Namespace = kubeOptions.Namespace
 	kubeOptions.DeploymentOptions.Image = dockerOptions.Image()
-	if err := kube.CreateOrUpdateDeployment(clientset, ctx, kubeOptions.DeploymentOptions); err != nil {
+	if err := kube.CreateOrUpdateDeployment(clientset, ctx, kubeOptions.DeploymentOptions, logHandler); err != nil {
 		return err
 	}
 
 	kubeOptions.ServiceOptions.Name = defaultOptions.AppName
 	kubeOptions.ServiceOptions.Namespace = kubeOptions.Namespace
 	kubeOptions.ServiceOptions.TargetPort = kubeOptions.DeploymentOptions.Port
-	if err := kube.CreateOrUpdateService(clientset, ctx, kubeOptions.ServiceOptions); err != nil {
+	if err := kube.CreateOrUpdateService(clientset, ctx, kubeOptions.ServiceOptions, logHandler); err != nil {
 		return err
 	}
 
 	kubeOptions.IngressOptions.Name = defaultOptions.AppName
 	kubeOptions.IngressOptions.Namespace = kubeOptions.Namespace
-	if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.IngressOptions); err != nil {
+	if err := kube.CreateOrUpdateIngress(clientset, ctx, kubeOptions.IngressOptions, logHandler); err != nil {
 		return err
 	}
 
 	if kubeOptions.HpaOptions.Enabled {
 		kubeOptions.HpaOptions.Name = defaultOptions.AppName
 		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
-		if err := kube.CreateOrUpdateHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
+		if err := kube.CreateOrUpdateHPA(clientset, ctx, kubeOptions.HpaOptions, logHandler); err != nil {
 			return err
 		}
 	} else {
 		kubeOptions.HpaOptions.Name = defaultOptions.AppName
 		kubeOptions.HpaOptions.Namespace = kubeOptions.Namespace
-		if err := kube.DeleteHPA(clientset, ctx, kubeOptions.HpaOptions); err != nil {
+		if err := kube.DeleteHPA(clientset, ctx, kubeOptions.HpaOptions, logHandler); err != nil {
 			return err
 		}
 	}
@@ -286,7 +288,7 @@ func setDockerOptions(dockerOptions *docker.DockerOptions, defaultOptions *Defau
 	return nil
 }
 
-func setKubeOptions(kubeOptions *KubeOptions) error {
+func setKubeOptions(kubeOptions *KubeOptions, defaultOptions *DefaultOptions) error {
 	kubeOptions.Kubeconfig = helpers.ExpandUser(kubeOptions.Kubeconfig)
 	exist, err := helpers.IsFileExist(kubeOptions.Kubeconfig)
 	if err != nil {

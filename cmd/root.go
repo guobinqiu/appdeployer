@@ -71,13 +71,13 @@ func setDefaultOptions(defaultOptions *DefaultOptions) error {
 }
 
 // Pull or clone into appdir
-func gitPull(gitOptions *git.GitOptions) error {
+func gitPull(gitOptions *git.GitOptions, logHandler func(msg string)) error {
 	gitOptions.AppDir = defaultOptions.AppDir
 	if gitOptions.Enabled {
 		if helpers.IsBlank(gitOptions.Repo) {
 			return fmt.Errorf("git.repo is required")
 		}
-		if err := git.Pull(*gitOptions); err != nil {
+		if err := git.Pull(*gitOptions, logHandler); err != nil {
 			return err
 		}
 	}

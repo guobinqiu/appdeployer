@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/guobinqiu/appdeployer/cmd"
@@ -17,13 +19,18 @@ type VMReq struct {
 }
 
 type VMDeployer struct {
+	logCh        chan string
+	requestStore map[string]VMReq
 }
 
 func NewVMDeployer() *VMDeployer {
-	return &VMDeployer{}
+	return &VMDeployer{
+		logCh:        make(chan string),
+		requestStore: make(map[string]VMReq),
+	}
 }
 
-func (deployer *VMDeployer) Deploy(c *gin.Context) {
+func (deployer *VMDeployer) Submit(c *gin.Context) {
 	var req VMReq
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -41,15 +48,46 @@ func (deployer *VMDeployer) Deploy(c *gin.Context) {
 	helpers.SetDefault(&req.AnsibleOptions.Hosts, "localhost")
 	helpers.SetDefault(&req.AnsibleOptions.InstallDir, "~/workspace")
 
-	if err := cmd.VMDeploy(&req.DefaultOptions, &req.GitOptions, &req.SSHOptions, &req.AnsibleOptions); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"msg": err.Error(),
+	requestID := fmt.Sprintf("%d", time.Now().UnixNano())
+	deployer.requestStore[requestID] = req
+	c.JSON(http.StatusOK, gin.H{
+		"requestID": requestID,
+	})
+}
+
+func (deployer *VMDeployer) Deploy(c *gin.Context) {
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "Streaming unsupported",
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"msg":  "success",
-		"data": req,
-	})
+	req, ok := deployer.requestStore[c.Query("requestID")]
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "No requestID found, call vm/submit first",
+		})
+		return
+	}
+
+	go func() {
+		if err := cmd.VMDeploy(&req.DefaultOptions, &req.GitOptions, &req.SSHOptions, &req.AnsibleOptions, func(msg string) {
+			deployer.logCh <- msg
+		}); err != nil {
+			deployer.logCh <- err.Error()
+		}
+		deployer.logCh <- "Stream ended"
+		close(deployer.logCh)
+	}()
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+
+	for log := range deployer.logCh {
+		c.SSEvent("message", log)
+		flusher.Flush()
+	}
 }

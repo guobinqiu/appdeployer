@@ -15,7 +15,7 @@ type ServiceAccountOptions struct {
 	Namespace string
 }
 
-func CreateOrUpdateServiceAccount(clientset *kubernetes.Clientset, ctx context.Context, opts ServiceAccountOptions) error {
+func CreateOrUpdateServiceAccount(clientset *kubernetes.Clientset, ctx context.Context, opts ServiceAccountOptions, logHandler func(msg string)) error {
 	serviceAccount := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      opts.Name,
@@ -32,9 +32,9 @@ func CreateOrUpdateServiceAccount(clientset *kubernetes.Clientset, ctx context.C
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create serviceaccount resource: %v", err)
 		}
-		fmt.Println("serviceaccount resource successfully updated")
+		logHandler("serviceaccount resource successfully updated")
 	} else {
-		fmt.Println("serviceaccount resource successfully created")
+		logHandler("serviceaccount resource successfully created")
 	}
 
 	return nil

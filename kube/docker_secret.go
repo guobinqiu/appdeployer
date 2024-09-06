@@ -21,8 +21,8 @@ type DockerSecretOptions struct {
 	docker.DockerOptions
 }
 
-func CreateOrUpdateDockerSecret(clientset *kubernetes.Clientset, ctx context.Context, opts DockerSecretOptions) error {
-	dockerconfigjson, err := buildDockerAuthConfig(opts.DockerOptions)
+func CreateOrUpdateDockerSecret(clientset *kubernetes.Clientset, ctx context.Context, opts DockerSecretOptions, logHandler func(msg string)) error {
+	dockerconfigjson, err := buildDockerAuthConfig(opts.DockerOptions, logHandler)
 	if err != nil {
 		return err
 	}
@@ -42,19 +42,19 @@ func CreateOrUpdateDockerSecret(clientset *kubernetes.Clientset, ctx context.Con
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create docker secret resource: %v", err)
 		}
-		fmt.Println("docker secret resource successfully updated")
+		logHandler("docker secret resource successfully updated")
 	} else {
-		fmt.Println("docker secret resource successfully created")
+		logHandler("docker secret resource successfully created")
 	}
 
 	return nil
 }
 
-func buildDockerAuthConfig(opts docker.DockerOptions) ([]byte, error) {
+func buildDockerAuthConfig(opts docker.DockerOptions, logHandler func(msg string)) ([]byte, error) {
 	var dockerConfig map[string]interface{}
 
 	if !helpers.IsBlank(opts.Registry) && !helpers.IsBlank(opts.Username) && !helpers.IsBlank(opts.Password) {
-		fmt.Println("Using username password auth")
+		logHandler("Using username password auth")
 
 		// 构造Docker配置信息
 		dockerConfig = map[string]interface{}{
@@ -65,7 +65,7 @@ func buildDockerAuthConfig(opts docker.DockerOptions) ([]byte, error) {
 			},
 		}
 	} else if !helpers.IsBlank(opts.Dockerconfig) {
-		fmt.Println("Using config file auth: " + opts.Dockerconfig)
+		logHandler("Using config file auth: " + opts.Dockerconfig)
 
 		//读取Docker配置文件
 		configData, err := os.ReadFile(opts.Dockerconfig)

@@ -70,11 +70,13 @@ var vmCmd = &cobra.Command{
 	Use:   "vm",
 	Short: "Deploy app to VM set",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return VMDeploy(&defaultOptions, &gitOptions, &sshOptions, &ansibleOptions)
+		return VMDeploy(&defaultOptions, &gitOptions, &sshOptions, &ansibleOptions, func(msg string) {
+			fmt.Println(msg)
+		})
 	},
 }
 
-func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions) error {
+func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions, logHandler func(msg string)) error {
 	if err := setDefaultOptions(defaultOptions); err != nil {
 		return err
 	}
@@ -87,7 +89,7 @@ func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOpt
 		return err
 	}
 
-	if err := gitPull(gitOptions); err != nil {
+	if err := gitPull(gitOptions, logHandler); err != nil {
 		return err
 	}
 

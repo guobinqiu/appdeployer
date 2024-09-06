@@ -1,7 +1,9 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/guobinqiu/appdeployer/cmd"
@@ -19,13 +21,18 @@ type KubeReq struct {
 }
 
 type KubeDeployer struct {
+	logCh        chan string
+	requestStore map[string]KubeReq
 }
 
 func NewKubeDeployer() *KubeDeployer {
-	return &KubeDeployer{}
+	return &KubeDeployer{
+		logCh:        make(chan string),
+		requestStore: make(map[string]KubeReq),
+	}
 }
 
-func (deployer *KubeDeployer) Deploy(c *gin.Context) {
+func (deployer *KubeDeployer) Submit(c *gin.Context) {
 	var req KubeReq
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -75,15 +82,49 @@ func (deployer *KubeDeployer) Deploy(c *gin.Context) {
 	helpers.SetDefault(&req.KubeOptions.PvcOptions.StorageClassName, "openebs-hostpath")
 	helpers.SetDefault(&req.KubeOptions.PvcOptions.StorageSize, "1G")
 
-	if err := cmd.KubeDeploy(&req.DefaultOptions, &req.GitOptions, &req.KubeOptions, &req.DockerOptions); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"msg": err.Error(),
+	requestID := fmt.Sprintf("%d", time.Now().UnixNano())
+	deployer.requestStore[requestID] = req
+	c.JSON(http.StatusOK, gin.H{
+		"requestID": requestID,
+	})
+}
+
+func (deployer *KubeDeployer) Deploy(c *gin.Context) {
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "Streaming unsupported",
 		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"msg":  "success",
-		"data": req,
-	})
+	requestID := c.Query("requestID")
+	req, ok := deployer.requestStore[requestID]
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "No requestID found, call kube/submit first",
+		})
+		return
+	}
+
+	go func() {
+		if err := cmd.KubeDeploy(&req.DefaultOptions, &req.GitOptions, &req.KubeOptions, &req.DockerOptions, func(msg string) {
+			deployer.logCh <- msg
+		}); err != nil {
+			deployer.logCh <- err.Error()
+		}
+	}()
+
+	c.Header("Content-Type", "text/event-stream")
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+
+	for log := range deployer.logCh {
+		c.SSEvent("message", log)
+		flusher.Flush()
+	}
+
+	deployer.logCh <- "Stream ended"
+	close(deployer.logCh)
+	delete(deployer.requestStore, requestID)
 }

@@ -16,7 +16,7 @@ type GitOptions struct {
 	Password string `form:"password" json:"password"`
 }
 
-func Pull(opts GitOptions) error {
+func Pull(opts GitOptions, logHandler func(msg string)) error {
 	// 初始化一个指向本地目录的新仓库（如果不存在则创建）
 	r, err := git.PlainClone(opts.AppDir, false, &git.CloneOptions{
 		URL:      opts.Repo,
@@ -49,6 +49,6 @@ func Pull(opts GitOptions) error {
 	if err != nil && err != git.NoErrAlreadyUpToDate {
 		return fmt.Errorf("Pull failed: %v", err)
 	}
-	fmt.Println("Pull successful.")
+	logHandler("Pull successful.")
 	return nil
 }

@@ -20,7 +20,7 @@ type PVCOptions struct {
 	StorageSize      string `form:"storagesize" json:"storagesize"`
 }
 
-func CreateOrUpdatePVC(clientset *kubernetes.Clientset, ctx context.Context, opts PVCOptions) error {
+func CreateOrUpdatePVC(clientset *kubernetes.Clientset, ctx context.Context, opts PVCOptions, logHandler func(msg string)) error {
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      opts.Name,
@@ -43,23 +43,23 @@ func CreateOrUpdatePVC(clientset *kubernetes.Clientset, ctx context.Context, opt
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create pvc resource: %v", err)
 		}
-		fmt.Println("pvc resource successfully updated")
+		logHandler("pvc resource successfully updated")
 	} else {
-		fmt.Println("pvc resource successfully created")
+		logHandler("pvc resource successfully created")
 	}
 
 	return nil
 }
 
-func DeletePVC(clientset *kubernetes.Clientset, ctx context.Context, opts HPAOptions) error {
+func DeletePVC(clientset *kubernetes.Clientset, ctx context.Context, opts HPAOptions, logHandler func(msg string)) error {
 	err := clientset.CoreV1().PersistentVolumeClaims(opts.Namespace).Delete(ctx, opts.Name, metav1.DeleteOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete hpa resource: %v", err)
 	}
 	if apierrors.IsNotFound(err) {
-		fmt.Printf("pvc resource %s in namespace %s not found, no action taken\n", opts.Name, opts.Namespace)
+		logHandler(fmt.Sprintf("pvc resource %s in namespace %s not found, no action taken\n", opts.Name, opts.Namespace))
 	} else {
-		fmt.Printf("pvc resource %s in namespace %s successfully deleted\n", opts.Name, opts.Namespace)
+		logHandler(fmt.Sprintf("pvc resource %s in namespace %s successfully deleted\n", opts.Name, opts.Namespace))
 	}
 	return nil
 }

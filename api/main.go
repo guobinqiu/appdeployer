@@ -33,12 +33,14 @@ func main() {
 
 	//r.Use(middleware.Auth()) //鉴权层
 
-	deployGroup := r.Group("/deploy")
-	deployGroup.POST("/vm", vmDeployer.Deploy)
-	deployGroup.POST("/kube", kubeDeployer.Deploy)
+	r.POST("/kube/submit", kubeDeployer.Submit)
+	r.GET("/kube/deploy", kubeDeployer.Deploy)
+
+	r.POST("/vm/submit", vmDeployer.Submit)
+	r.GET("/vm/deploy", vmDeployer.Deploy)
 
 	srv := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":8888",
 		Handler: r,
 	}
 

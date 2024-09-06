@@ -122,7 +122,7 @@ go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiu
 #### API
 
 ```
-curl --location 'http://localhost:8080/deploy/kube' \
+curl --location 'http://localhost:8888/kube/submit' \
 --header 'Content-Type: application/json' \
 --data '{
     "default": {
@@ -133,6 +133,8 @@ curl --location 'http://localhost:8080/deploy/kube' \
         "password": "111111111"
     }
 }'
+
+curl -X GET 'http://localhost:8888/kube/deploy?requestID=XXXXXXXXXXX'
 ```
 
 ### Deploy to VM Cluster
@@ -152,7 +154,7 @@ go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin -
 #### API
 
 ```
-curl --location 'http://localhost:8080/deploy/vm' \
+curl --location 'http://localhost:8888/vm/submit' \
 --header 'Content-Type: application/json' \
 --data '{
     "default": {
@@ -168,4 +170,6 @@ curl --location 'http://localhost:8080/deploy/vm' \
         "hosts": "192.168.1.9"
     }
 }'
+
+curl -X GET 'http://localhost:8888/vm/deploy?requestID=XXXXXXXXXXX'
 ```

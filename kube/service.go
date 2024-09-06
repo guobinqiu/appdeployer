@@ -18,7 +18,7 @@ type ServiceOptions struct {
 	TargetPort int32
 }
 
-func CreateOrUpdateService(clientset *kubernetes.Clientset, ctx context.Context, opts ServiceOptions) error {
+func CreateOrUpdateService(clientset *kubernetes.Clientset, ctx context.Context, opts ServiceOptions, logHandler func(msg string)) error {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      opts.Name,
@@ -43,9 +43,9 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ctx context.Context,
 		if !apierrors.IsAlreadyExists(err) {
 			return fmt.Errorf("failed to create service resource: %v", err)
 		}
-		fmt.Println("service resource successfully updated")
+		logHandler("service resource successfully updated")
 	} else {
-		fmt.Println("service resource successfully created")
+		logHandler("service resource successfully created")
 	}
 
 	return nil

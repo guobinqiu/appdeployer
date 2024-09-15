@@ -105,13 +105,13 @@
 
 ## Usage
 
-### 1.Web UI 
+### 1. Web UI 
 
 https://github.com/guobinqiu/appdeployer-webui
 
-### 2.CLI
+### 2. CLI
 
-#### Deploy to Kubernetes Cluster
+Deploy to Kubernetes Cluster
 
 ```
 go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
@@ -121,7 +121,7 @@ go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiu
 go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
 ```
 
-#### Deploy to VM Cluster
+Deploy to VM Cluster
 
 ```
 go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
@@ -131,9 +131,9 @@ go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin -
 go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
 ```
 
-### 3.API
+### 3. API
 
-#### Deploy to Kubernetes Cluster
+Deploy to Kubernetes Cluster
 
 ```
 curl --location 'http://localhost:8888/kube/submit' \
@@ -151,7 +151,7 @@ curl --location 'http://localhost:8888/kube/submit' \
 curl -X GET 'http://localhost:8888/kube/deploy?requestID=XXXXXXXXXXX'
 ```
 
-#### Deploy to VM Cluster
+Deploy to VM Cluster
 
 ```
 curl --location 'http://localhost:8888/vm/submit' \

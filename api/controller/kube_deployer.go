@@ -21,13 +21,11 @@ type KubeReq struct {
 }
 
 type KubeDeployer struct {
-	logCh        chan string
 	requestStore map[string]KubeReq
 }
 
 func NewKubeDeployer() *KubeDeployer {
 	return &KubeDeployer{
-		logCh:        make(chan string),
 		requestStore: make(map[string]KubeReq),
 	}
 }
@@ -107,24 +105,24 @@ func (deployer *KubeDeployer) Deploy(c *gin.Context) {
 		return
 	}
 
+	logCh := make(chan string)
+
 	go func() {
 		if err := cmd.KubeDeploy(&req.DefaultOptions, &req.GitOptions, &req.KubeOptions, &req.DockerOptions, func(msg string) {
-			deployer.logCh <- msg
+			logCh <- msg
 		}); err != nil {
-			deployer.logCh <- err.Error()
+			logCh <- err.Error()
 		}
+		logCh <- "Done"
+		close(logCh)
 	}()
 
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 
-	for log := range deployer.logCh {
+	for log := range logCh {
 		c.SSEvent("message", log)
 		flusher.Flush()
 	}
-
-	deployer.logCh <- "Stream ended"
-	close(deployer.logCh)
-	delete(deployer.requestStore, requestID)
 }

@@ -28,7 +28,7 @@ func CreateOrUpdateService(clientset *kubernetes.Clientset, ctx context.Context,
 			Type: corev1.ServiceTypeClusterIP,
 			Ports: []corev1.ServicePort{
 				{
-					Name:       "http",
+					Name:       "app",
 					Port:       opts.Port,
 					TargetPort: intstr.FromInt32(opts.TargetPort),
 				},

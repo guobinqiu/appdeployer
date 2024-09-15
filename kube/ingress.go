@@ -62,7 +62,7 @@ func CreateOrUpdateIngress(clientset *kubernetes.Clientset, ctx context.Context,
 										Service: &networkingv1.IngressServiceBackend{
 											Name: opts.Name,
 											Port: networkingv1.ServiceBackendPort{
-												Name: "http",
+												Name: "app",
 											},
 										},
 									},

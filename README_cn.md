@@ -48,7 +48,7 @@
 | dockerfile   | Dockerfile的路径,Dockerfile是用于描述如何构建Docker镜像的文本文件.默认位于当前目录的根路径下.                              | 否   | ./Dockerfile                |
 | registry     | Docker仓库的URL,用于推送或拉取Docker镜像.默认是Docker Hub的官方仓库地址.                                                   | 否   | https://index.docker.io/v1/ |
 | username     | 用于访问Docker仓库的用户名.如果仓库需要认证,则此参数是必需的.                                                              | 是   |
-| password     | 与username对应的密码或访问令牌.如果仓库需要认证,则此参数是必需的                                                           | 是   |
+| password     | 与username对应的密码或访问令牌.如果仓库需要认证,则此参数是必需的                                                           | 否   |
 | repository   | Docker镜像的仓库名称,包括可能的命名空间（例如,username/repository）                                                        | 是   |
 | tag          | Docker镜像的标签,用于区分同一仓库中的不同版本或构建                                                                        | 否   | latest                      |
 
@@ -112,11 +112,11 @@
 #### CLI
 
 ```
-go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
+go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** -e TZ=Asia/Shanghai
 
-go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
+go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiuguobin --docker.password=*** -e TZ=Asia/Shanghai
 
-go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
+go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** -e TZ=Asia/Shanghai
 ```
 
 #### API

@@ -19,13 +19,11 @@ type VMReq struct {
 }
 
 type VMDeployer struct {
-	logCh        chan string
 	requestStore map[string]VMReq
 }
 
 func NewVMDeployer() *VMDeployer {
 	return &VMDeployer{
-		logCh:        make(chan string),
 		requestStore: make(map[string]VMReq),
 	}
 }
@@ -72,21 +70,23 @@ func (deployer *VMDeployer) Deploy(c *gin.Context) {
 		return
 	}
 
+	logCh := make(chan string)
+
 	go func() {
 		if err := cmd.VMDeploy(&req.DefaultOptions, &req.GitOptions, &req.SSHOptions, &req.AnsibleOptions, func(msg string) {
-			deployer.logCh <- msg
+			logCh <- msg
 		}); err != nil {
-			deployer.logCh <- err.Error()
+			logCh <- err.Error()
 		}
-		deployer.logCh <- "Stream ended"
-		close(deployer.logCh)
+		logCh <- "Stream ended"
+		close(logCh)
 	}()
 
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 
-	for log := range deployer.logCh {
+	for log := range logCh {
 		c.SSEvent("message", log)
 		flusher.Flush()
 	}

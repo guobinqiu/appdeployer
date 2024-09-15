@@ -105,11 +105,13 @@
 
 ## Usage
 
-### Deploy to Kubernetes Cluster
+### 1.Web UI 
 
-Different cluster environments can set different kubeconfig files for the `--kube.kubeconfig` parameter. Currently, Docker images are used, and private registries can be configured.
+https://github.com/guobinqiu/appdeployer-webui
 
-#### CLI
+### 2.CLI
+
+#### Deploy to Kubernetes Cluster
 
 ```
 go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
@@ -119,7 +121,19 @@ go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiu
 go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** --kube.kubeconfig=~/Downloads/config -e TZ=Asia/Shanghai
 ```
 
-#### API
+#### Deploy to VM Cluster
+
+```
+go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
+
+go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=java
+
+go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
+```
+
+### 3.API
+
+#### Deploy to Kubernetes Cluster
 
 ```
 curl --location 'http://localhost:8888/kube/submit' \
@@ -137,21 +151,7 @@ curl --location 'http://localhost:8888/kube/submit' \
 curl -X GET 'http://localhost:8888/kube/deploy?requestID=XXXXXXXXXXX'
 ```
 
-### Deploy to VM Cluster
-
-Install Ansible. Different cluster environments can set different host lists for the `--ansible.hosts` parameter, separated by commas.
-
-#### CLI
-
-```
-go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
-
-go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=java
-
-go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
-```
-
-#### API
+#### Deploy to VM Cluster
 
 ```
 curl --location 'http://localhost:8888/vm/submit' \

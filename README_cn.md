@@ -101,7 +101,7 @@
 | hpa.cpurate=50                                | HPA扩展Pod的CPU利用率阈值                                                                          | 否    | 50                |
 | pvc.accessmode                                | PVC的访问模式(readwriteonce,readonlymany,readwritemany),不区分大小写                               | 否    | readwriteonce     |
 | pvc.storageclassname                          | PVC所使用的StorageClass                                                                            | 否    | openebs-hostpath  |
-| pvc.storagesize                               | PVC请求的存储大小                                                                                  | 否    | 1G                |
+| pvc.storagesize                               | PVC请求的存储大小                                                                                  | 否    | 1Gi               |
 
 ## 用法
 

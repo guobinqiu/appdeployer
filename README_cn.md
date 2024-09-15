@@ -105,11 +105,13 @@
 
 ## 用法
 
-### 发布到Kubernetes集群
+### 1. Web UI 
 
-不同的集群环境可以给`--kube.kubeconfig`参数设置不同的kubeconfig文件, 目前镜像用的docker, 可以配置私有镜像
+https://github.com/guobinqiu/appdeployer-webui
 
-#### CLI
+### 2. CLI
+
+发布到kubernetes集群
 
 ```
 go run main.go kube --default.appdir=~/workspace/hellogo --docker.username=qiuguobin --docker.password=*** -e TZ=Asia/Shanghai
@@ -119,7 +121,19 @@ go run main.go kube --default.appdir=~/workspace/hellojava --docker.username=qiu
 go run main.go kube --default.appdir=~/workspace/hellonode --docker.username=qiuguobin --docker.password=*** -e TZ=Asia/Shanghai
 ```
 
-#### API
+发布到vm集群
+
+```
+go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
+
+go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=java
+
+go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
+```
+
+### 3. API
+
+发布到kubernetes集群
 
 ```
 curl --location 'http://localhost:8888/kube/submit' \
@@ -137,26 +151,7 @@ curl --location 'http://localhost:8888/kube/submit' \
 curl -X GET 'http://localhost:8888/kube/deploy?requestID=XXXXXXXXXXX'
 ```
 
-SSE URL
-```
-http://localhost:8888/kube/deploy?requestID=1725602754229208000
-```
-
-### 发布到虚拟机集群
-
-安装ansible,不同的集群环境可以给`--ansible.hosts`参数设置不同的主机列表,用逗号分隔
-
-#### CLI
-
-```
-go run main.go vm --default.appdir=~/workspace/hellogo --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=go
-
-go run main.go vm --default.appdir=~/workspace/hellojava --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=java
-
-go run main.go vm --default.appdir=~/workspace/hellonode --ssh.username=guobin --ssh.password=111111 --ansible.become_password=111111 --ansible.hosts=192.168.1.9 --ansible.role=nodejs
-```
-
-#### API
+发布到vm集群
 
 ```
 curl --location 'http://localhost:8888/vm/submit' \

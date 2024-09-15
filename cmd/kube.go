@@ -68,7 +68,7 @@ func init() {
 	viper.SetDefault("kube.hpa.cpurate", 50)
 	viper.SetDefault("kube.pvc.accessmode", "readwriteonce")
 	viper.SetDefault("kube.pvc.storageclassname", "openebs-hostpath")
-	viper.SetDefault("kube.pvc.storagesize", "1G")
+	viper.SetDefault("kube.pvc.storagesize", "1Gi")
 
 	// docker
 	kubeCmd.Flags().StringVar(&dockerOptions.Dockerconfig, "docker.dockerconfig", viper.GetString("docker.dockerconfig"), "Path to docker configuration. Defaults to ~/.docker/config.json")
@@ -125,7 +125,7 @@ func init() {
 	kubeCmd.Flags().Int32Var(&kubeOptions.HpaOptions.CPURate, "kube.hpa.cpurate", viper.GetInt32("kube.hpa.cpurate"), "Average CPU utilization for HPA (Horizontal Pod Autoscaler). Defaults to 50")
 	kubeCmd.Flags().StringVar(&kubeOptions.PvcOptions.AccessMode, "kube.pvc.accessmode", viper.GetString("kube.pvc.accessmode"), "Access mode of persistent storage for pod volumn mount. Such as ReadWriteOnce, ReadOnlyMany and ReadWriteMany. Defaults to ReadWriteOnce")
 	kubeCmd.Flags().StringVar(&kubeOptions.PvcOptions.StorageClassName, "kube.pvc.storageclassname", viper.GetString("kube.pvc.storageclassname"), "Classname of persistent storage for pod volumn mount. Defaults to openebs-hostpath")
-	kubeCmd.Flags().StringVar(&kubeOptions.PvcOptions.StorageSize, "kube.pvc.storagesize", viper.GetString("kube.pvc.storagesize"), "Size of persistent storage for pod volumn mount. Defaults to 1G")
+	kubeCmd.Flags().StringVar(&kubeOptions.PvcOptions.StorageSize, "kube.pvc.storagesize", viper.GetString("kube.pvc.storagesize"), "Size of persistent storage for pod volumn mount. Defaults to 1Gi")
 	kubeCmd.Flags().StringSliceVarP(&kubeOptions.DeploymentOptions.EnvVars, "env", "e", nil, "Set environment variables in the form of key=value")
 }
 

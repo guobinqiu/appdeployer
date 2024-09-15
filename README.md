@@ -101,7 +101,7 @@
 | hpa.cpurate=50                                | CPU utilization threshold for scaling Pod                                          | No       | 50                      |
 | pvc.accessmode                                | Access mode for PVC (readwriteonce, readonlymany, readwritemany), case insensitive | No       | readwriteonce           |
 | pvc.storageclassname                          | StorageClass used by the PVC                                                       | No       | openebs-hostpath        |
-| pvc.storagesize                               | Requested storage size for the PVC                                                 | No       | 1G                      |
+| pvc.storagesize                               | Requested storage size for the PVC                                                 | No       | 1Gi                     |
 
 ## Usage
 

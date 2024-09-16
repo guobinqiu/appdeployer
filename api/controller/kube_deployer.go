@@ -109,6 +109,7 @@ func (deployer *KubeDeployer) Deploy(c *gin.Context) {
 
 	go func() {
 		if err := cmd.KubeDeploy(&req.DefaultOptions, &req.GitOptions, &req.KubeOptions, &req.DockerOptions, func(msg string) {
+			fmt.Println(msg)
 			logCh <- msg
 		}); err != nil {
 			logCh <- err.Error()

@@ -242,7 +242,6 @@ func runPlaybook(defaultOptions *DefaultOptions, sshOptions *SSHOptions, ansible
 	scanner := bufio.NewScanner(stdout)
 	for scanner.Scan() {
 		line := scanner.Text()
-		fmt.Println(line)
 		logHandler(line)
 	}
 

@@ -74,6 +74,7 @@ func (deployer *VMDeployer) Deploy(c *gin.Context) {
 
 	go func() {
 		if err := cmd.VMDeploy(&req.DefaultOptions, &req.GitOptions, &req.SSHOptions, &req.AnsibleOptions, func(msg string) {
+			fmt.Println(msg)
 			logCh <- msg
 		}); err != nil {
 			logCh <- err.Error()

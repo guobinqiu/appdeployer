@@ -97,7 +97,7 @@ func VMDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, sshOpt
 		return err
 	}
 
-	if err := runPlaybook(defaultOptions, sshOptions, ansibleOptions); err != nil {
+	if err := runPlaybook(defaultOptions, sshOptions, ansibleOptions, logHandler); err != nil {
 		return err
 	}
 
@@ -197,7 +197,7 @@ type PlaybookData struct {
 	Role       string
 }
 
-func runPlaybook(defaultOptions *DefaultOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions) error {
+func runPlaybook(defaultOptions *DefaultOptions, sshOptions *SSHOptions, ansibleOptions *AnsibleOptions, logHandler func(msg string)) error {
 	inventoryFile, err := executeTemplate(inventoryTemplate, InventoryData{
 		AppName: defaultOptions.AppName,
 		Hosts:   ansibleOptions.Hosts,
@@ -226,15 +226,28 @@ func runPlaybook(defaultOptions *DefaultOptions, sshOptions *SSHOptions, ansible
 	}
 
 	cmd := exec.Command("ansible-playbook", cmdArgs...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
 	currentDir, _ := os.Getwd()
 	rootDir := helpers.FindRootDir(currentDir)
 	cmd.Dir = filepath.Join(rootDir)
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to execute playbook: %v", err)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create StdoutPipe: %v", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to start cmd: %v", err)
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		fmt.Println(line)
+		logHandler(line)
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return fmt.Errorf("failed to finish cmd: %v", err)
 	}
 
 	defer func() {

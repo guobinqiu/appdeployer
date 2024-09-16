@@ -29,7 +29,7 @@
 | privatekey_path       | Path to where the private key file generated on the SSH client                                      | No       | ~/.ssh/appdeployer     |
 | publickey_path        | Path to where the public key file generated on the SSH client                                       | No       | ~/.ssh/appdeployer.pub |
 | knownhosts_path       | Path to where the known_hosts file generated on the SSH client storing SSH server's public keys     | No       | ~/.ssh/known_hosts     |
-| stricthostkeychecking | SSH client verifies the server's public key before establishing a connection                        | No       | true                   |
+| stricthostkeychecking | SSH client verifies the server's public key before establishing a connection                        | No       | false                  |
 
 ### Ansible Parameters
 

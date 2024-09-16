@@ -45,7 +45,7 @@ func init() {
 	viper.SetDefault("ssh.privatekey_path", "~/.ssh/appdeployer")
 	viper.SetDefault("ssh.publickey_path", "~/.ssh/appdeployer.pub")
 	viper.SetDefault("ssh.knownhosts_path", "~/.ssh/known_hosts")
-	viper.SetDefault("ssh.stricthostkeychecking", true)
+	viper.SetDefault("ssh.stricthostkeychecking", false)
 	viper.SetDefault("ansible.hosts", "localhost")
 	viper.SetDefault("ansible.installdir", "~/workspace")
 
@@ -57,7 +57,7 @@ func init() {
 	vmCmd.Flags().StringVar(&sshOptions.PrivatekeyPath, "ssh.privatekey_path", viper.GetString("ssh.privatekey_path"), "Path to where the private key file generated on the SSH client. Defaults to ~/.ssh/appdeployer")
 	vmCmd.Flags().StringVar(&sshOptions.PublickeyPath, "ssh.publickey_path", viper.GetString("ssh.publickey_path"), "Path to where the public key file generated on the SSH client. Defaults to ~/.ssh/appdeployer.pub")
 	vmCmd.Flags().StringVar(&sshOptions.KnownHostsPath, "ssh.knownhosts_path", viper.GetString("ssh.knownhosts_path"), "Path to where the known_hosts file generated on the SSH client storing SSH server's public keys. Defaults to ~/.ssh/known_hosts")
-	vmCmd.Flags().BoolVar(&sshOptions.StrictHostKeyChecking, "ssh.stricthostkeychecking", viper.GetBool("ssh.stricthostkeychecking"), "Whether or not to skip the confirmation of the SSH server's public key. Defaults to true")
+	vmCmd.Flags().BoolVar(&sshOptions.StrictHostKeyChecking, "ssh.stricthostkeychecking", viper.GetBool("ssh.stricthostkeychecking"), "Whether or not to skip the confirmation of the SSH server's public key. Defaults to false")
 
 	//ansible
 	vmCmd.Flags().StringVar(&ansibleOptions.Hosts, "ansible.hosts", viper.GetString("ansible.hosts"), "Hosts on which the app will be deployed. Defaults to localhost.")

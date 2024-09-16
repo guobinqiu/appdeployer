@@ -29,7 +29,7 @@
 | privatekey_path       | 生成的ssh客户端私钥文件路径                                  | 否   | ~/.ssh/appdeployer     |
 | publickey_path        | 生成的ssh客户端公钥文件路径                                  | 否   | ~/.ssh/appdeployer.pub |
 | knownhosts_path       | 生成的ssh客户端known_hosts文件路径,用于存储ssh服务端公钥     | No   | ~/.ssh/known_hosts     |
-| stricthostkeychecking | ssh客户端在接受连接前对服务端公钥进行验证                    | No   | true                   |
+| stricthostkeychecking | ssh客户端在接受连接前对服务端公钥进行验证                    | No   | false                  |
 
 ### ansible参数
 

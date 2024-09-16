@@ -78,7 +78,7 @@ func (deployer *VMDeployer) Deploy(c *gin.Context) {
 		}); err != nil {
 			logCh <- err.Error()
 		}
-		logCh <- "Stream ended"
+		logCh <- "Done"
 		close(logCh)
 	}()
 

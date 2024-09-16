@@ -53,10 +53,10 @@ func init() {
 	vmCmd.Flags().StringVar(&sshOptions.Username, "ssh.username", viper.GetString("ssh.username"), "Username for connecting to SSH server")
 	vmCmd.Flags().StringVar(&sshOptions.Password, "ssh.password", viper.GetString("ssh.password"), "Password for connecting to SSH server")
 	vmCmd.Flags().IntVar(&sshOptions.Port, "ssh.port", viper.GetInt("ssh.port"), "Port for connecting to SSH server")
-	vmCmd.Flags().StringVar(&sshOptions.AuthorizedKeysPath, "ssh.authorized_keys_path", viper.GetString("ssh.authorized_keys_path"), "Path to SSH server authorized_keys file storing SSH client's public keys. Defaults to ~/.ssh/authorized_keys")
-	vmCmd.Flags().StringVar(&sshOptions.PrivatekeyPath, "ssh.privatekey_path", viper.GetString("ssh.privatekey_path"), "Path to SSH client private key file")
-	vmCmd.Flags().StringVar(&sshOptions.PublickeyPath, "ssh.publickey_path", viper.GetString("ssh.publickey_path"), "Path to SSH client public key file")
-	vmCmd.Flags().StringVar(&sshOptions.KnownHostsPath, "ssh.knownhosts_path", viper.GetString("ssh.knownhosts_path"), "Path to SSH client known_hosts file storing SSH server's public keys. Defaults to ~/.ssh/known_hosts")
+	vmCmd.Flags().StringVar(&sshOptions.AuthorizedKeysPath, "ssh.authorized_keys_path", viper.GetString("ssh.authorized_keys_path"), "Path to where the authorized_keys file generated on the SSH server storing SSH client's public keys. Defaults to ~/.ssh/authorized_keys")
+	vmCmd.Flags().StringVar(&sshOptions.PrivatekeyPath, "ssh.privatekey_path", viper.GetString("ssh.privatekey_path"), "Path to where the private key file generated on the SSH client. Defaults to ~/.ssh/appdeployer")
+	vmCmd.Flags().StringVar(&sshOptions.PublickeyPath, "ssh.publickey_path", viper.GetString("ssh.publickey_path"), "Path to where the public key file generated on the SSH client. Defaults to ~/.ssh/appdeployer.pub")
+	vmCmd.Flags().StringVar(&sshOptions.KnownHostsPath, "ssh.knownhosts_path", viper.GetString("ssh.knownhosts_path"), "Path to where the known_hosts file generated on the SSH client storing SSH server's public keys. Defaults to ~/.ssh/known_hosts")
 	vmCmd.Flags().BoolVar(&sshOptions.StrictHostKeyChecking, "ssh.stricthostkeychecking", viper.GetBool("ssh.stricthostkeychecking"), "Whether or not to skip the confirmation of the SSH server's public key. Defaults to true")
 
 	//ansible

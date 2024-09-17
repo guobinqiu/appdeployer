@@ -1,13 +1,12 @@
 package docker
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -75,7 +74,15 @@ func (ds *DockerService) Close() error {
 	return ds.cli.Close()
 }
 
-func (ds *DockerService) BuildImage(ctx context.Context, opts DockerOptions) error {
+type BuildMessage struct {
+	Stream string `json:"stream"`
+	Status string `json:"status"`
+	Aux    struct {
+		ID string `json:"ID"`
+	} `json:"aux"`
+}
+
+func (ds *DockerService) BuildImage(ctx context.Context, opts DockerOptions, logHandler func(msg string)) error {
 	if err := opts.Validate(); err != nil {
 		return err
 	}
@@ -100,10 +107,23 @@ func (ds *DockerService) BuildImage(ctx context.Context, opts DockerOptions) err
 	}
 	defer resp.Body.Close()
 
-	// 读取并处理构建过程中的输出流，这里通常会打印到控制台
-	io.Copy(os.Stdout, resp.Body)
+	// 逐行打印响应流
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		var msg BuildMessage
+		json.Unmarshal([]byte(line), &msg)
+		logHandler(msg.Stream)
+	}
 
 	return nil
+}
+
+type PushMessage struct {
+	Status         string                 `json:"status"`
+	ProgressDetail map[string]interface{} `json:"progressDetail"`
+	ID             string                 `json:"id"`
+	Aux            map[string]interface{} `json:"aux"`
 }
 
 func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions, logHandler func(msg string)) error {
@@ -126,18 +146,20 @@ func (ds *DockerService) PushImage(ctx context.Context, opts DockerOptions, logH
 	authStr := base64.URLEncoding.EncodeToString(encodedJSON)
 
 	// 推送镜像
-	pushResp, err := ds.cli.ImagePush(ctx, opts.Image(), image.PushOptions{RegistryAuth: authStr})
+	resp, err := ds.cli.ImagePush(ctx, opts.Image(), image.PushOptions{RegistryAuth: authStr})
 	if err != nil {
 		return fmt.Errorf("failed to marshal auth configuration to JSON: %v", err)
 	}
-	defer pushResp.Close()
+	defer resp.Close()
 
-	// 打印推送日志
-	body, err := io.ReadAll(pushResp)
-	if err != nil {
-		return fmt.Errorf("failed to read response body while pushing Docker image: %v", err)
+	// 逐行打印响应流
+	scanner := bufio.NewScanner(resp)
+	for scanner.Scan() {
+		line := scanner.Text()
+		var msg PushMessage
+		json.Unmarshal([]byte(line), &msg)
+		logHandler(msg.Status)
 	}
-	logHandler(string(body))
 
 	return nil
 }

@@ -164,7 +164,7 @@ func KubeDeploy(defaultOptions *DefaultOptions, gitOptions *git.GitOptions, kube
 	ctx := context.TODO()
 
 	// Build an app into a docker image
-	if err := dockerservice.BuildImage(ctx, *dockerOptions); err != nil {
+	if err := dockerservice.BuildImage(ctx, *dockerOptions, logHandler); err != nil {
 		return err
 	}
 

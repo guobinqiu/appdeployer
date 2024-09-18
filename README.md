@@ -173,3 +173,11 @@ curl --location 'http://localhost:8888/vm/submit' \
 
 curl -X GET 'http://localhost:8888/vm/deploy?requestID=XXXXXXXXXXX'
 ```
+
+## Todo List
+
+- [ ] Select multiple environments for simultaneous deployment
+- [ ] Add static code analysis
+- [ ] Add username and password login to the web UI
+- [ ] Retain the history of each deployment
+- [ ] ...

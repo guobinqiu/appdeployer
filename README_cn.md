@@ -173,3 +173,11 @@ curl --location 'http://localhost:8888/vm/submit' \
 
 curl -X GET 'http://localhost:8888/vm/deploy?requestID=XXXXXXXXXXX'
 ```
+
+## Todo List
+
+- [ ] 选择多个环境同时发布
+- [ ] 加入静态检查
+- [ ] webUI加入用户名密码登录
+- [ ] 保留每次发布的历史
+- [ ] ...

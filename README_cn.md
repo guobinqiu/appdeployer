@@ -176,6 +176,7 @@ curl -X GET 'http://localhost:8888/vm/deploy?requestID=XXXXXXXXXXX'
 
 ## 待办事项列表
 
+- [ ] Deployment增加label标签以便将来控制流量分发
 - [ ] 选择多个环境同时发布
 - [ ] 加入静态检查
 - [ ] webUI加入用户名密码登录

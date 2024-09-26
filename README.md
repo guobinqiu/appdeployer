@@ -176,6 +176,7 @@ curl -X GET 'http://localhost:8888/vm/deploy?requestID=XXXXXXXXXXX'
 
 ## Todo List
 
+- [ ] Add label to Deployment for traffic distribution
 - [ ] Select multiple environments for simultaneous deployment
 - [ ] Add static code analysis
 - [ ] Add username and password login to the web UI

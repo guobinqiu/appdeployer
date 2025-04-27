@@ -1,4 +1,4 @@
-# Quick Deployment of Applications to Kubernetes or VM Clusters
+# Quick Deployment of Applications to Kubernetes or VM sets
 
 ## Parameter Description
 
